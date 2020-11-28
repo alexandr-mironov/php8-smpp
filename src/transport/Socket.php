@@ -17,19 +17,19 @@ use smpp\exceptions\SocketTransportException;
  */
 class Socket
 {
-    protected $socket;
-    protected $hosts;
-    protected $persist;
-    protected $debugHandler;
-    public $debug;
+    protected   $socket;
+    protected   $hosts;
+    protected   $persist;
+    protected   $debugHandler;
+    public      $debug;
 
-    protected static $defaultSendTimeout=100;
-    protected static $defaultRecvTimeout=750;
-    public static $defaultDebug=false;
+    protected   static  int     $defaultSendTimeout = 100;
+    protected   static  int     $defaultRecvTimeout = 750;
+    public      static  bool    $defaultDebug       = false;
 
-    public static $forceIpv6=false;
-    public static $forceIpv4=false;
-    public static $randomHost=false;
+    public      static  bool    $forceIpv6  = false;
+    public      static  bool    $forceIpv4  = false;
+    public      static  bool    $randomHost = false;
 
     /**
      * Construct a new socket for this transport to use.
@@ -39,17 +39,24 @@ class Socket
      * @param boolean $persist use persistent sockets
      * @param mixed $debugHandler callback for debug info
      */
-    public function __construct(array $hosts,$ports,$persist=false,$debugHandler=null)
+    public function __construct(
+        array $hosts,
+        array|int|string $ports,
+        bool $persist = false,
+        mixed $debugHandler=null
+    )
     {
         $this->debug = self::$defaultDebug;
-        $this->debugHandler = $debugHandler ? $debugHandler : 'error_log';
+        $this->debugHandler = (isset($debugHandler) && is_callable($debugHandler)) ? $debugHandler : 'error_log';
 
         // Deal with optional port
         $h = [];
         foreach ($hosts as $key => $host) {
             $h[] = [$host, is_array($ports) ? $ports[$key] : $ports];
         }
-        if (self::$randomHost) shuffle($h);
+        if (self::$randomHost) {
+            shuffle($h);
+        }
         $this->resolveHosts($h);
 
         $this->persist = $persist;
@@ -84,7 +91,9 @@ class Socket
                     }
                     if ($records) {
                         foreach ($records as $r) {
-                            if (isset($r['ipv6']) && $r['ipv6']) $ip6s[] = $r['ipv6'];
+                            if (isset($r['ipv6']) && $r['ipv6']) {
+                                $ip6s[] = $r['ipv6'];
+                            }
                         }
                     }
                     if ($this->debug) {
@@ -99,7 +108,9 @@ class Socket
                     }
                     if ($records) {
                         foreach ($records as $r) {
-                            if (isset($r['ip']) && $r['ip']) $ip4s[] = $r['ip'];
+                            if (isset($r['ip']) && $r['ip']) {
+                                $ip4s[] = $r['ip'];
+                            }
                         }
                     }
                     // also try gethostbyname, since name could also be something else, such as "localhost" etc.
@@ -158,9 +169,9 @@ class Socket
      * @param integer $lvl
      * @return false|mixed
      */
-    public function getSocketOption($option,$lvl=SOL_SOCKET)
+    public function getSocketOption(int $option, int $lvl = SOL_SOCKET): false|mixed
     {
-        return socket_get_option($this->socket,$lvl,$option);
+        return socket_get_option($this->socket, $lvl, $option);
     }
 
     /**
@@ -171,9 +182,9 @@ class Socket
      * @param integer $lvl
      * @return bool
      */
-    public function setSocketOption($option,$value,$lvl=SOL_SOCKET)
+    public function setSocketOption(int $option, $value, $lvl = SOL_SOCKET): bool
     {
-        return socket_set_option($this->socket,$lvl,$option,$value);
+        return socket_set_option($this->socket, $lvl, $option, $value);
     }
 
     /**
@@ -182,7 +193,7 @@ class Socket
      * @param int $timeout	Timeout in milliseconds.
      * @return boolean
      */
-    public function setSendTimeout($timeout)
+    public function setSendTimeout(int $timeout)
     {
         if (!$this->isOpen()) {
             self::$defaultSendTimeout = $timeout;
@@ -202,7 +213,7 @@ class Socket
      * @param int $timeout	Timeout in milliseconds.
      * @return boolean
      */
-    public function setRecvTimeout($timeout)
+    public function setRecvTimeout(int $timeout)
     {
         if (!$this->isOpen()) {
             self::$defaultRecvTimeout = $timeout;
@@ -253,7 +264,7 @@ class Socket
      * @param integer $millisec
      * @return array
      */
-    private function millisecToSolArray($millisec)
+    private function millisecToSolArray(int $millisec)
     {
         $usec = $millisec*1000;
         return ['sec' => floor($usec/1000000), 'usec' => $usec%1000000];
