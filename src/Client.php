@@ -62,33 +62,27 @@ class Client
     /** @var integer Use sar_msg_ref_num and sar_total_segments with 16 bit tags */
     const CSMS_16BIT_TAGS = 0;
 
-    /**
-     * Use message payload for CSMS
-     * @var integer
-     */
+    /** @var integer Use message payload for CSMS */
     const CSMS_PAYLOAD = 1;
 
-    /**
-     * Embed a UDH in the message with 8-bit reference.
-     * @var integer
-     */
+    /** @var integer Embed a UDH in the message with 8-bit reference. */
     const CSMS_8BIT_UDH = 2;
 
     public static $csmsMethod = self::CSMS_16BIT_TAGS;
 
-    public $debug;
+    public $debug = false;
 
-    protected $pduQueue;
+    protected $pduQueue = [];
 
-    protected $transport;
+    protected Socket $transport;
     protected $debugHandler;
 
     // Used for reconnect
-    protected $mode;
-    private $login;
-    private $pass;
+    protected   string|null $mode   = null;
+    private     string      $login  = '';
+    private     string      $pass   = '';
 
-    protected $sequenceNumber;
+    protected   int         $sequenceNumber = 1;
     protected $sarMessageReferenceNumber;
 
     /**
@@ -97,16 +91,20 @@ class Client
      * @param Socket $transport
      * @param string $debugHandler
      */
-    public function __construct(Socket $transport, $debugHandler = null)
+    public function __construct(
+        public Socket $transport,
+        public string|null $debugHandler = null
+    )
     {
         // Internal parameters
-        $this->sequenceNumber = 1;
-        $this->debug = false;
-        $this->pduQueue = [];
+        //$this->sequenceNumber = 1;
+        //$this->debug = false;
+        //$this->pduQueue = [];
 
-        $this->transport = $transport;
-        $this->debugHandler = $debugHandler ? $debugHandler : 'error_log';
-        $this->mode = null;
+        //$this->transport = $transport;
+
+        $this->debugHandler = ($debugHandler && is_callable($debugHandler)) ? $debugHandler : 'error_log';
+        //$this->mode = null;
     }
 
     /**
@@ -613,7 +611,9 @@ class Client
     protected function parseSMS(Pdu $pdu)
     {
         // Check command id
-        if($pdu->id != Smpp::DELIVER_SM) throw new \InvalidArgumentException('PDU is not an received SMS');
+        if($pdu->id != Smpp::DELIVER_SM) {
+            throw new \InvalidArgumentException('PDU is not an received SMS');
+        }
 
         // Unpack PDU
         $ar=unpack("C*",$pdu->body);
