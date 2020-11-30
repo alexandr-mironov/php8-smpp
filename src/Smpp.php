@@ -164,7 +164,11 @@ class Smpp
     const STATE_REJECTED                    = 8;
 
 
-    public static function getStatusMessage($statuscode)
+    /**
+     * @param int $statuscode
+     * @return string
+     */
+    public static function getStatusMessage($statuscode): string
     {
         return match($statuscode){
             self::ESME_ROK              => 'No Error',
