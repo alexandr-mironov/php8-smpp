@@ -273,7 +273,7 @@ class Client
             $source->npi,
             $source->value
         );
-        
+
         $reply = $this->sendCommand(Smpp::QUERY_SM, $pduBody);
 
         if (!$reply || $reply->status != Smpp::ESME_ROK) {
@@ -474,7 +474,9 @@ class Client
         $esmClass=null
     )
     {
-        if (is_null($esmClass)) $esmClass = self::$smsEsmClass;
+        if (is_null($esmClass)) {
+            $esmClass = self::$smsEsmClass;
+        }
 
         // Construct PDU with mandatory fields
         $pdu = pack(
@@ -550,7 +552,9 @@ class Client
                 $msg_length = strlen($message);
                 // Do we need to do php based split?
                 $numParts = floor($msg_length / $split);
-                if ($msg_length % $split == 0) $numParts--;
+                if ($msg_length % $split == 0) {
+                    $numParts--;
+                }
                 $slowSplit = false;
 
                 for($i=1;$i<=$numParts;$i++) {
