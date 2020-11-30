@@ -189,7 +189,9 @@ class Client
      */
     public function close()
     {
-        if (!$this->transport->isOpen()) return;
+        if (!$this->transport->isOpen()) {
+            return;
+        }
         if($this->debug) call_user_func($this->debugHandler, 'Unbinding...');
 
         $response=$this->sendCommand(Smpp::UNBIND,"");
@@ -211,10 +213,16 @@ class Client
     public function parseSmppTime($input, $newDates=true)
     {
         // Check for support for new date classes
-        if (!class_exists('DateTime') || !class_exists('DateInterval')) $newDates = false;
+        if (!class_exists('DateTime') || !class_exists('DateInterval')) {
+            $newDates = false;
+        }
 
         $numMatch = preg_match('/^(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{1})(\\d{2})([R+-])$/',$input,$matches);
-        if (!$numMatch) return null;
+
+        if (!$numMatch) {
+            return null;
+        }
+
         list($whole, $y, $m, $d, $h, $i, $s, $t, $n, $p) = $matches;
 
         // Use strtotime to convert relative time into a unix timestamp
@@ -256,7 +264,7 @@ class Client
      * @return array
      * @throws \Exception
      */
-    public function queryStatus($messageID, Address $source)
+    public function queryStatus($messageID, Address $source): array
     {
         $pduBody = pack(
             'a'.(strlen($messageID)+1).'cca'.(strlen($source->value)+1),
@@ -265,8 +273,12 @@ class Client
             $source->npi,
             $source->value
         );
+        
         $reply = $this->sendCommand(Smpp::QUERY_SM, $pduBody);
-        if (!$reply || $reply->status != Smpp::ESME_ROK) return null;
+
+        if (!$reply || $reply->status != Smpp::ESME_ROK) {
+            return null;
+        }
 
         // Parse reply
         $posID = strpos($reply->body,"\0",0);
