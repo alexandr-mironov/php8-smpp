@@ -210,7 +210,7 @@ class Client
      * @return mixed
      * @throws \Exception
      */
-    public function parseSmppTime($input, $newDates=true)
+    public function parseSmppTime($input, $newDates = true)
     {
         // Check for support for new date classes
         if (!class_exists('DateTime') || !class_exists('DateInterval')) {
@@ -283,11 +283,12 @@ class Client
         // Parse reply
         $posID = strpos($reply->body,"\0",0);
         $posDate = strpos($reply->body,"\0",$posID+1);
-        $data = [];
-        $data['message_id'] = substr($reply->body, 0, $posID);
-        $data['final_date'] = substr($reply->body, $posID,$posDate-$posID);
+        $data = [
+            'message_id'    => substr($reply->body, 0, $posID),
+            'final_date'    => substr($reply->body, $posID,$posDate - $posID),
+        ];
         $data['final_date'] = $data['final_date'] ? $this->parseSmppTime(trim($data['final_date'])) : null;
-        $status = unpack("cmessage_state/cerror_code", substr($reply->body,$posDate+1));
+        $status = unpack("cmessage_state/cerror_code", substr($reply->body,$posDate + 1));
         return array_merge($data,$status);
     }
 
@@ -301,7 +302,7 @@ class Client
         $commandID=Smpp::DELIVER_SM;
         // Check the queue
         $queueLength = count($this->pduQueue);
-        for($i=0;$i<$queueLength;$i++) {
+        for($i = 0; $i < $queueLength; $i++) {
             $pdu=$this->pduQueue[$i];
             if($pdu->id==$commandID) {
                 //remove response
@@ -316,7 +317,7 @@ class Client
                 return false;
             } // TSocket v. 0.6.0+ returns false on timeout
             //check for enquire link command
-            if($pdu->id==Smpp::ENQUIRE_LINK) {
+            if($pdu->id == Smpp::ENQUIRE_LINK) {
                 $response = new Pdu(Smpp::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
                 $this->sendPDU($response);
             } else if ($pdu->id!=$commandID) { // if this is not the correct PDU add to queue
@@ -351,8 +352,8 @@ class Client
         Address $from,
         Address $to,
         $message,
-        $tags=null,
-        $dataCoding=Smpp::DATA_CODING_DEFAULT,
+        $tags = null,
+        $dataCoding = Smpp::DATA_CODING_DEFAULT,
         $priority=0x00,
         $scheduleDeliveryTime=null,
         $validityPeriod=null
@@ -390,11 +391,11 @@ class Client
             $doCsms = true;
             if (self::$csmsMethod != self::CSMS_PAYLOAD) {
                 $parts = $this->splitMessageString($message, $csmsSplit, $dataCoding);
-                $short_message = reset($parts);
+                $shortMessage = reset($parts);
                 $csmsReference = $this->getCsmsReference();
             }
         } else {
-            $short_message = $message;
+            $shortMessage = $message;
             $doCsms = false;
         }
 
@@ -406,7 +407,7 @@ class Client
                     $from,
                     $to,
                     null,
-                    (empty($tags) ? [$payload] : array_merge($tags,$payload)),
+                    (empty($tags) ? [$payload] : array_merge($tags, $payload)),
                     $dataCoding,
                     $priority,
                     $scheduleDeliveryTime,
@@ -443,7 +444,7 @@ class Client
             }
         }
 
-        return $this->submit_sm($from, $to, $short_message, $tags, $dataCoding);
+        return $this->submit_sm($from, $to, $shortMessage, $tags, $dataCoding);
     }
 
     /**
@@ -453,7 +454,7 @@ class Client
      *
      * @param Address $source
      * @param Address $destination
-     * @param string $short_message
+     * @param string $shortMessage
      * @param array $tags
      * @param integer $dataCoding
      * @param integer $priority
@@ -465,25 +466,26 @@ class Client
     protected function submit_sm(
         Address $source,
         Address $destination,
-        $short_message=null,
-        $tags=null,
-        $dataCoding=Smpp::DATA_CODING_DEFAULT,
-        $priority=0x00,
-        $scheduleDeliveryTime=null,
-        $validityPeriod=null,
-        $esmClass=null
+        $shortMessage = null,
+        $tags = null,
+        $dataCoding = Smpp::DATA_CODING_DEFAULT,
+        $priority = 0x00,
+        $scheduleDeliveryTime = null,
+        $validityPeriod = null,
+        $esmClass = null
     )
     {
         if (is_null($esmClass)) {
             $esmClass = self::$smsEsmClass;
         }
 
+        $shortMessageLength = strlen($shortMessage);
         // Construct PDU with mandatory fields
         $pdu = pack(
             'a1cca'.(strlen($source->value)+1)
             .'cca'.(strlen($destination->value)+1)
             .'ccc'.($scheduleDeliveryTime ? 'a16x' : 'a1').($validityPeriod ? 'a16x' : 'a1')
-            .'ccccca'.(strlen($short_message)+(self::$smsNullTerminateOctetstrings ? 1 : 0)),
+            .'ccccca'.($shortMessageLength + (self::$smsNullTerminateOctetstrings ? 1 : 0)),
             self::$smsServiceType,
             $source->ton,
             $source->npi,
@@ -500,8 +502,8 @@ class Client
             self::$smsReplaceIfPresentFlag,
             $dataCoding,
             self::$smsSmDefaultMessageID,
-            strlen($short_message),//sm_length
-            $short_message//short_message
+            $shortMessageLength, //sm_length
+            $shortMessage //short_message
         );
 
         // Add any tags
@@ -511,8 +513,8 @@ class Client
             }
         }
 
-        $response=$this->sendCommand(Smpp::SUBMIT_SM,$pdu);
-        $body = unpack("a*msgid",$response->body);
+        $response = $this->sendCommand(Smpp::SUBMIT_SM, $pdu);
+        $body = unpack("a*msgid", $response->body);
         return $body['msgid'];
     }
 
