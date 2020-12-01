@@ -545,14 +545,14 @@ class Client
      * @param integer $dataCoding (optional)
      * @return array
      */
-    protected function splitMessageString($message, $split, $dataCoding=Smpp::DATA_CODING_DEFAULT)
+    protected function splitMessageString($message, $split, $dataCoding = Smpp::DATA_CODING_DEFAULT)
     {
         switch ($dataCoding) {
             case Smpp::DATA_CODING_DEFAULT:
-                $msg_length = strlen($message);
+                $messageLength = strlen($message);
                 // Do we need to do php based split?
-                $numParts = floor($msg_length / $split);
-                if ($msg_length % $split == 0) {
+                $numParts = floor($messageLength / $split);
+                if ($messageLength % $split == 0) {
                     $numParts--;
                 }
                 $slowSplit = false;
@@ -563,13 +563,15 @@ class Client
                         break;
                     };
                 }
-                if (!$slowSplit) return str_split($message,$split);
+                if (!$slowSplit) {
+                    return str_split($message, $split);
+                }
 
                 // Split the message char-by-char
                 $parts = [];
                 $part = null;
                 $n = 0;
-                for($i=0;$i<$msg_length;$i++) {
+                for($i = 0; $i < $messageLength; $i++) {
                     $c = $message[$i];
                     // reset on $split or if last char is a GSM 03.38 escape char
                     if ($n==$split || ($n==($split-1) && $c=="\x1B")) {
