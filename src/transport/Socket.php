@@ -52,7 +52,10 @@ class Socket
         // Deal with optional port
         $h = [];
         foreach ($hosts as $key => $host) {
-            $h[] = [$host, is_array($ports) ? $ports[$key] : $ports];
+            $h[] = [
+                $host,
+                is_array($ports) ? $ports[$key] : $ports
+            ];
         }
         if (self::$randomHost) {
             shuffle($h);
@@ -233,7 +236,7 @@ class Socket
      * Throws SocketTransportException is state could not be ascertained
      * @throws SocketTransportException
      */
-    public function isOpen()
+    public function isOpen(): bool
     {
         if (!is_resource($this->socket)) {
             return false;
@@ -264,9 +267,9 @@ class Socket
      * @param integer $millisec
      * @return array
      */
-    private function millisecToSolArray(int $millisec)
+    private function millisecToSolArray(int $millisec): array
     {
-        $usec = $millisec*1000;
+        $usec = $millisec * 1000;
         return ['sec' => floor($usec/1000000), 'usec' => $usec%1000000];
     }
 
@@ -373,7 +376,7 @@ class Socket
      * @return boolean
      * @throws SocketTransportException
      */
-    public function hasData()
+    public function hasData(): bool
     {
         $r = [$this->socket];
         $w = null;
