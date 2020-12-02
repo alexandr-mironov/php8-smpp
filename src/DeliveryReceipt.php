@@ -30,7 +30,17 @@ class DeliveryReceipt extends Sms
         if ($numMatches == 0) {
             throw new \InvalidArgumentException('Could not parse delivery receipt: '.$this->message."\n".bin2hex($this->body));
         }
-        list($matched, $this->id, $this->sub, $this->dlvrd, $this->submitDate, $this->doneDate, $this->stat, $this->err, $this->text) = $matches;
+        list(
+            $matched,
+            $this->id,
+            $this->sub,
+            $this->dlvrd,
+            $this->submitDate,
+            $this->doneDate,
+            $this->stat,
+            $this->err,
+            $this->text
+            ) = $matches;
 
         // Convert dates
         $dp = str_split($this->submitDate,2);
