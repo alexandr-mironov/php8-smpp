@@ -74,7 +74,7 @@ class Client
 
     protected $pduQueue = [];
 
-    protected Socket $transport;
+//    protected Socket $transport;
     protected $debugHandler;
 
     // Used for reconnect
@@ -89,11 +89,11 @@ class Client
      * Construct the SMPP class
      *
      * @param Socket $transport
-     * @param string $debugHandler
+     * @param string|null $debugHandler
      */
     public function __construct(
         public Socket $transport,
-        public string|null $debugHandler = null
+        string|null $debugHandler = null
     )
     {
         // Internal parameters
@@ -261,10 +261,10 @@ class Client
      *
      * @param string $messageID
      * @param Address $source
-     * @return array
+     * @return null|array
      * @throws \Exception
      */
-    public function queryStatus($messageID, Address $source): array
+    public function queryStatus($messageID, Address $source): null|array
     {
         $pduBody = pack(
             'a'.(strlen($messageID)+1).'cca'.(strlen($source->value)+1),
