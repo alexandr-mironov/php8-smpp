@@ -778,22 +778,12 @@ class Client
         $this->transport->open();
         $this->sequenceNumber = 1;
 
-        switch($this->mode){
-            case self::MODE_TRANSMITTER:{
-                $this->bindTransmitter($this->login, $this->pass);
-                break;
-            }
-            case self::MODE_RECEIVER:{
-                $this->bindReceiver($this->login, $this->pass);
-                break;
-            }
-            case self::MODE_TRANSCEIVER:{
-                $this->bindTransceiver($this->login, $this->pass);
-                break;
-            }
-            default:
-                throw new \Exception('Invalid mode: ' . $this->mode);
-        }
+        match($this->mode){
+            self::MODE_TRANSMITTER  => $this->bindTransmitter($this->login, $this->pass),
+            self::MODE_RECEIVER     => $this->bindReceiver($this->login, $this->pass),
+            self::MODE_TRANSCEIVER  => $this->bindTransceiver($this->login, $this->pass),
+            default                 => throw new \Exception('Invalid mode: ' . $this->mode)
+        };
     }
 
     /**
