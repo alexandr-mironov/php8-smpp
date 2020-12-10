@@ -9,7 +9,7 @@ namespace smpp;
  */
 class DeliveryReceipt extends Sms
 {
-    public $id;
+    public int $id;
     public $sub;
     public $dlvrd;
     public $submitDate;
@@ -30,7 +30,7 @@ class DeliveryReceipt extends Sms
         if ($numMatches == 0) {
             throw new \InvalidArgumentException('Could not parse delivery receipt: '.$this->message."\n".bin2hex($this->body));
         }
-        list(
+        [
             $matched,
             $this->id,
             $this->sub,
@@ -40,7 +40,7 @@ class DeliveryReceipt extends Sms
             $this->stat,
             $this->err,
             $this->text
-            ) = $matches;
+        ] = $matches;
 
         // Convert dates
         $dp = str_split($this->submitDate,2);
