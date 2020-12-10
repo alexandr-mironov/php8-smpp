@@ -9,11 +9,6 @@ namespace smpp;
  */
 class Tag
 {
-    public int      $id;
-    public int      $length;
-    public string   $value;
-    public string   $type;
-
     const DEST_ADDR_SUBUNIT             = 0x0005;
     const DEST_NETWORK_TYPE             = 0x0006;
     const DEST_BEARER_TYPE              = 0x0007;
@@ -70,17 +65,12 @@ class Tag
      * @param string $type (optional)
      */
     public function __construct(
-        public int $id,
-        public string $value,
-        public ?int $length = null,
-        public string $type = 'a*'
+        public int      $id,
+        public string   $value,
+        public ?int     $length = null,
+        public string   $type = 'a*'
     )
-    {
-//        $this->id = $id;
-//        $this->value = $value;
-//        $this->length = $length;
-//        $this->type = $type;
-    }
+    {}
 
     /**
      * Get the TLV packed into a binary string for transport
