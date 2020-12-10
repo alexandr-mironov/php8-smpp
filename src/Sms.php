@@ -9,23 +9,6 @@ namespace smpp;
  */
 class Sms extends Pdu
 {
-    public  string  $serviceType;
-    public  Address $source;
-    public  Address $destination;
-    public  int     $esmClass;
-    public  int     $protocolId;
-    public  int     $priorityFlag;
-    public  int     $registeredDelivery;
-    public  int     $dataCoding;
-    public  string  $message;
-    public  array   $tags;
-
-    // Unused in deliver_sm
-    public string   $scheduleDeliveryTime;
-    public string   $validityPeriod;
-    public int      $smDefaultMsgId;
-    public int      $replaceIfPresentFlag;
-
     /**
      * Construct a new SMS
      *
@@ -63,6 +46,7 @@ class Sms extends Pdu
         public int $dataCoding,
         public string $message,
         public array $tags,
+        // Unused in deliver_sm
         public string|null $scheduleDeliveryTime = null,
         public string|null $validityPeriod = null,
         public int|null $smDefaultMsgId = null,
@@ -70,19 +54,5 @@ class Sms extends Pdu
     )
     {
         parent::__construct($id, $status, $sequence, $body);
-//        $this->service_type = $service_type;
-//        $this->source = $source;
-//        $this->destination = $destination;
-//        $this->esmClass = $esmClass;
-//        $this->protocolId = $protocolId;
-//        $this->priorityFlag = $priorityFlag;
-//        $this->registeredDelivery = $registeredDelivery;
-//        $this->dataCoding = $dataCoding;
-//        $this->message = $message;
-//        $this->tags = $tags;
-//        $this->scheduleDeliveryTime = $scheduleDeliveryTime;
-//        $this->validityPeriod = $validityPeriod;
-//        $this->smDefaultMsgId = $smDefaultMsgId;
-//        $this->replaceIfPresentFlag = $replaceIfPresentFlag;
     }
 }
