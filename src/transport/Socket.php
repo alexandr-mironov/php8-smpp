@@ -3,6 +3,7 @@
 
 namespace smpp\transport;
 
+use JetBrains\PhpStorm\ArrayShape;
 use smpp\exceptions\SocketTransportException;
 
 /**
@@ -72,17 +73,17 @@ class Socket
      * @param array $hosts
      * @throws \InvalidArgumentException
      */
-    protected function resolveHosts($hosts)
+    protected function resolveHosts(array $hosts)
     {
         $i = 0;
         foreach($hosts as $host) {
-            list($hostname,$port) = $host;
+            [$hostname, $port] = $host;
             $ip4s = [];
             $ip6s = [];
             if (preg_match('/^([12]?[0-9]?[0-9]\.){3}([12]?[0-9]?[0-9])$/',$hostname)) {
                 // IPv4 address
                 $ip4s[] = $hostname;
-            } else if (preg_match('/^([0-9a-f:]+):[0-9a-f]{1,4}$/i',$hostname)) {
+            } elseif (preg_match('/^([0-9a-f:]+):[0-9a-f]{1,4}$/i',$hostname)) {
                 // IPv6 address
                 $ip6s[] = $hostname;
             } else { // Do a DNS lookup
@@ -169,12 +170,12 @@ class Socket
      * Get an arbitrary option
      *
      * @param integer $option
-     * @param integer $lvl
+     * @param integer $level
      * @return mixed
      */
-    public function getSocketOption(int $option, int $lvl = SOL_SOCKET): mixed
+    public function getSocketOption(int $option, int $level = SOL_SOCKET): mixed
     {
-        return socket_get_option($this->socket, $lvl, $option);
+        return socket_get_option($this->socket, $level, $option);
     }
 
     /**
@@ -182,21 +183,21 @@ class Socket
      *
      * @param integer $option
      * @param mixed $value
-     * @param integer $lvl
+     * @param integer $level
      * @return bool
      */
-    public function setSocketOption(int $option, $value, $lvl = SOL_SOCKET): bool
+    public function setSocketOption(int $option, mixed $value, $level = SOL_SOCKET): bool
     {
-        return socket_set_option($this->socket, $lvl, $option, $value);
+        return socket_set_option($this->socket, $level, $option, $value);
     }
 
     /**
      * Sets the send timeout.
      * Returns true on success, or false.
      * @param int $timeout	Timeout in milliseconds.
-     * @return boolean
+     * @return bool
      */
-    public function setSendTimeout(int $timeout)
+    public function setSendTimeout(int $timeout): bool
     {
         if (!$this->isOpen()) {
             self::$defaultSendTimeout = $timeout;
@@ -214,9 +215,9 @@ class Socket
      * Sets the receive timeout.
      * Returns true on success, or false.
      * @param int $timeout	Timeout in milliseconds.
-     * @return boolean
+     * @return bool
      */
-    public function setRecvTimeout(int $timeout)
+    public function setRecvTimeout(int $timeout): bool
     {
         if (!$this->isOpen()) {
             self::$defaultRecvTimeout = $timeout;
@@ -245,9 +246,8 @@ class Socket
         $r = null;
         $w = null;
         $e = [$this->socket];
-        $res = socket_select($r,$w,$e,0);
 
-        if ($res === false) {
+        if (socket_select($r,$w,$e,0) === false) {
             throw new SocketTransportException(
                 'Could not examine socket; '.socket_strerror(socket_last_error()),
                 socket_last_error()
@@ -267,10 +267,14 @@ class Socket
      * @param integer $millisec
      * @return array
      */
+    #[ArrayShape(['sec' => "false|float", 'usec' => "int"])]
     private function millisecToSolArray(int $millisec): array
     {
         $usec = $millisec * 1000;
-        return ['sec' => floor($usec/1000000), 'usec' => $usec%1000000];
+        return [
+            'sec' => floor($usec/1000000),
+            'usec' => $usec%1000000
+        ];
     }
 
     /**
@@ -282,6 +286,8 @@ class Socket
      */
     public function open()
     {
+        $sendTimeout = $this->millisecToSolArray(self::$defaultSendTimeout);
+        $receiveTimeout = $this->millisecToSolArray(self::$defaultRecvTimeout);
         if (!self::$forceIpv4) {
             $socket6 = @socket_create(AF_INET6,SOCK_STREAM,SOL_TCP);
             if ($socket6 == false) {
@@ -290,18 +296,8 @@ class Socket
                     socket_last_error()
                 );
             }
-            socket_set_option(
-                $socket6,
-                SOL_SOCKET,
-                SO_SNDTIMEO,
-                $this->millisecToSolArray(self::$defaultSendTimeout)
-            );
-            socket_set_option(
-                $socket6,
-                SOL_SOCKET,
-                SO_RCVTIMEO,
-                $this->millisecToSolArray(self::$defaultRecvTimeout)
-            );
+            socket_set_option($socket6, SOL_SOCKET, SO_SNDTIMEO, $sendTimeout);
+            socket_set_option($socket6, SOL_SOCKET, SO_RCVTIMEO, $receiveTimeout);
         }
         if (!self::$forceIpv6) {
             $socket4 = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
@@ -311,8 +307,8 @@ class Socket
                     socket_last_error()
                 );
             }
-            socket_set_option($socket4,SOL_SOCKET,SO_SNDTIMEO,$this->millisecToSolArray(self::$defaultSendTimeout));
-            socket_set_option($socket4,SOL_SOCKET,SO_RCVTIMEO,$this->millisecToSolArray(self::$defaultRecvTimeout));
+            socket_set_option($socket4, SOL_SOCKET, SO_SNDTIMEO, $sendTimeout);
+            socket_set_option($socket4, SOL_SOCKET, SO_RCVTIMEO, $receiveTimeout);
         }
         $it = new \ArrayIterator($this->hosts);
         while ($it->valid()) {
