@@ -170,9 +170,9 @@ class Socket
      *
      * @param integer $option
      * @param integer $lvl
-     * @return false|mixed
+     * @return mixed
      */
-    public function getSocketOption(int $option, int $lvl = SOL_SOCKET): false|mixed
+    public function getSocketOption(int $option, int $lvl = SOL_SOCKET): mixed
     {
         return socket_get_option($this->socket, $lvl, $option);
     }
@@ -363,11 +363,10 @@ class Socket
      * Since we don't reuse sockets, we can just close and forget about it,
      * but we choose to wait (linger) for the last data to come through.
      */
-    public function close()
+    public function close(): void
     {
-        $arrOpt = ['l_onoff' => 1, 'l_linger' => 1];
         socket_set_block($this->socket);
-        socket_set_option($this->socket, SOL_SOCKET, SO_LINGER, $arrOpt);
+        socket_set_option($this->socket, SOL_SOCKET, SO_LINGER, ['l_onoff' => 1, 'l_linger' => 1]);
         socket_close($this->socket);
     }
 
@@ -381,8 +380,7 @@ class Socket
         $r = [$this->socket];
         $w = null;
         $e = null;
-        $res = socket_select($r,$w,$e,0);
-        if ($res === false) {
+        if (socket_select($r,$w,$e,0) === false) {
             throw new SocketTransportException(
                 'Could not examine socket; ' . socket_strerror(socket_last_error()),
                 socket_last_error()
@@ -404,10 +402,9 @@ class Socket
      * Throws SocketTransportException if data could not be read.
      *
      * @param integer $length
-     * @return mixed
-     * @throws SocketTransportException
+     * @return false|string
      */
-    public function read($length)
+    public function read($length): false|string
     {
         $d = socket_read($this->socket,$length,PHP_BINARY_READ);
         // sockets give EAGAIN on timeout
@@ -434,7 +431,7 @@ class Socket
      * @param integer $length
      * @return string
      */
-    public function readAll($length)
+    public function readAll($length): string
     {
         $d = "";
         $r = 0;
@@ -457,10 +454,9 @@ class Socket
             $r = [$this->socket];
             $w = null;
             $e = [$this->socket];
-            $res = socket_select($r,$w,$e, $readTimeout['sec'], $readTimeout['usec']);
 
             // check
-            if ($res === false) {
+            if (socket_select($r,$w,$e, $readTimeout['sec'], $readTimeout['usec']) === false) {
                 throw new SocketTransportException(
                     'Could not examine socket; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
@@ -490,8 +486,8 @@ class Socket
         $r = $length;
         $writeTimeout = socket_get_option($this->socket,SOL_SOCKET,SO_SNDTIMEO);
 
-        while ($r>0) {
-            $wrote = socket_write($this->socket,$buffer,$r);
+        while ($r > 0) {
+            $wrote = socket_write($this->socket, $buffer, $r);
             if ($wrote === false) {
                 throw new SocketTransportException(
                     'Could not write ' . $length . ' bytes to socket; ' . socket_strerror(socket_last_error()),
@@ -503,16 +499,15 @@ class Socket
                 return;
             }
 
-            $buffer = substr($buffer,$wrote);
+            $buffer = substr($buffer, $wrote);
 
             // wait for the socket to accept more data, up to timeout
             $r = null;
             $w = [$this->socket];
             $e = [$this->socket];
-            $res = socket_select($r,$w,$e, $writeTimeout['sec'], $writeTimeout['usec']);
 
             // check
-            if ($res === false) {
+            if (socket_select($r,$w,$e, $writeTimeout['sec'], $writeTimeout['usec']) === false) {
                 throw new SocketTransportException(
                     'Could not examine socket; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
