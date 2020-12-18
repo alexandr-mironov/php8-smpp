@@ -26,10 +26,10 @@ class Sms extends Pdu
      * @param integer $dataCoding
      * @param string $message
      * @param array $tags (optional)
-     * @param string $scheduleDeliveryTime (optional)
-     * @param string $validityPeriod (optional)
-     * @param integer $smDefaultMsgId (optional)
-     * @param integer $replaceIfPresentFlag (optional)
+     * @param string|null $scheduleDeliveryTime (optional)
+     * @param string|null $validityPeriod (optional)
+     * @param int|null $smDefaultMsgId (optional)
+     * @param int|null $replaceIfPresentFlag (optional)
      */
     public function __construct(
         int $id,
