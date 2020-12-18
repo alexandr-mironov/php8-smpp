@@ -477,7 +477,7 @@ class Socket
      * @param $buffer
      * @param integer $length
      */
-    public function write($buffer,$length)
+    public function write($buffer, int $length)
     {
         $r = $length;
         $writeTimeout = socket_get_option($this->socket,SOL_SOCKET,SO_SNDTIMEO);
