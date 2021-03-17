@@ -115,7 +115,7 @@ class Client
      * @throws SmppException
      * @throws \Exception
      */
-    public function bindReceiver($login, $pass)
+    public function bindReceiver(string $login, string $pass)
     {
         if (!$this->transport->isOpen()) {
             return false;
@@ -214,7 +214,7 @@ class Client
      * @return mixed
      * @throws \Exception
      */
-    public function parseSmppTime($input, $newDates = true)
+    public function parseSmppTime(string $input, bool $newDates = true)
     {
         // Check for support for new date classes
         if (!class_exists('DateTime') || !class_exists('DateInterval')) {
@@ -268,7 +268,7 @@ class Client
      * @return null|array
      * @throws \Exception
      */
-    public function queryStatus($messageID, Address $source): null|array
+    public function queryStatus(string $messageID, Address $source): null|array
     {
         $pduBody = pack(
             'a'.(strlen($messageID)+1).'cca'.(strlen($source->value)+1),

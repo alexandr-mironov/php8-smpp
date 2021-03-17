@@ -24,7 +24,7 @@ class GsmEncoderHelper
      * @param string $string
      * @return string
      */
-    public static function utf8_to_gsm0338($string): string
+    public static function utf8_to_gsm0338(string $string): string
     {
         $dict = [
             '@' => "\x00",
@@ -159,7 +159,7 @@ class GsmEncoderHelper
      * @param string $utf8String
      * @return integer
      */
-    public static function countGsm0338Length($utf8String): int
+    public static function countGsm0338Length(string $utf8String): int
     {
         $len = mb_strlen($utf8String,'utf-8');
         $len += preg_match_all('/[\\^{}\\\~€|\\[\\]]/mu',$utf8String,$m);
@@ -173,7 +173,7 @@ class GsmEncoderHelper
      * @param string $data
      * @return string
      */
-    public static function pack7bit($data):string
+    public static function pack7bit(string $data): string
     {
         $l = strlen($data);
         $currentByte = 0;
