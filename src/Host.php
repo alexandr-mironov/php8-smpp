@@ -4,7 +4,7 @@
 namespace smpp;
 
 
-class Host
+class Host implements ItemInterface
 {
 
 }
