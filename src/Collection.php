@@ -11,6 +11,8 @@ use IteratorIterator;
 /**
  * Class Collection
  * @package smpp
+ *
+ * all item classes must implements ItemInterface
  */
 class Collection extends IteratorIterator
 {
@@ -88,7 +90,7 @@ class Collection extends IteratorIterator
     }
 
     /**
-     *
+     * @return string
      */
     public function __toString(): string
     {

@@ -46,10 +46,10 @@ class Socket
     /** @var bool */
     public static bool $forceIpv6 = false;
 
-    /** @var bool  */
+    /** @var bool */
     public static bool $forceIpv4 = false;
 
-    /** @var bool  */
+    /** @var bool */
     public static bool $randomHost = false;
 
     /**
@@ -189,9 +189,9 @@ class Socket
      *
      * @param integer $option
      * @param integer $level
-     * @return mixed
+     * @return array|false|int
      */
-    public function getSocketOption(int $option, int $level = SOL_SOCKET): mixed
+    public function getSocketOption(int $option, int $level = SOL_SOCKET): array|false|int
     {
         return socket_get_option($this->socket, $level, $option);
     }
@@ -204,7 +204,7 @@ class Socket
      * @param integer $level
      * @return bool
      */
-    public function setSocketOption(int $option, mixed $value, $level = SOL_SOCKET): bool
+    public function setSocketOption(int $option, mixed $value, int $level = SOL_SOCKET): bool
     {
         return socket_set_option($this->socket, $level, $option, $value);
     }
