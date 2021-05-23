@@ -5,6 +5,7 @@ namespace smpp\transport;
 
 use JetBrains\PhpStorm\ArrayShape;
 use smpp\exceptions\SocketTransportException;
+use Socket as SocketClass;
 
 /**
  * TCP Socket Transport for use with multiple protocols.
@@ -18,19 +19,38 @@ use smpp\exceptions\SocketTransportException;
  */
 class Socket
 {
-    protected   $socket;
-    protected   $hosts;
-    protected   $persist;
-    protected   $debugHandler;
-    public      $debug;
+    /**
+     * @var SocketClass $socket - instance of Socket (since PHP 8)
+     * @see https://www.php.net/manual/ru/class.socket.php
+     */
+    protected SocketClass $socket;
 
-    protected   static  int     $defaultSendTimeout = 100;
-    protected   static  int     $defaultRecvTimeout = 750;
-    public      static  bool    $defaultDebug       = false;
+    /** @var */
+    protected $hosts;
 
-    public      static  bool    $forceIpv6  = false;
-    public      static  bool    $forceIpv4  = false;
-    public      static  bool    $randomHost = false;
+    /** @var callable|string */
+    protected $debugHandler;
+
+    /** @var bool */
+    public $debug;
+
+    /** @var int */
+    protected static int $defaultSendTimeout = 100;
+
+    /** @var int */
+    protected static int $defaultRecvTimeout = 750;
+
+    /** @var bool */
+    public static bool $defaultDebug = false;
+
+    /** @var bool */
+    public static bool $forceIpv6 = false;
+
+    /** @var bool  */
+    public static bool $forceIpv4 = false;
+
+    /** @var bool  */
+    public static bool $randomHost = false;
 
     /**
      * Construct a new socket for this transport to use.
@@ -43,8 +63,8 @@ class Socket
     public function __construct(
         array $hosts,
         array|int|string $ports,
-        bool $persist = false,
-        mixed $debugHandler=null
+        protected bool $persist = false,
+        mixed $debugHandler = null
     )
     {
         $this->debug = self::$defaultDebug;
@@ -62,8 +82,6 @@ class Socket
             shuffle($h);
         }
         $this->resolveHosts($h);
-
-        $this->persist = $persist;
     }
 
     /**
@@ -73,25 +91,25 @@ class Socket
      * @param array $hosts
      * @throws \InvalidArgumentException
      */
-    protected function resolveHosts(array $hosts)
+    protected function resolveHosts(array $hosts): void
     {
         $i = 0;
-        foreach($hosts as $host) {
+        foreach ($hosts as $host) {
             [$hostname, $port] = $host;
             $ip4s = [];
             $ip6s = [];
-            if (preg_match('/^([12]?[0-9]?[0-9]\.){3}([12]?[0-9]?[0-9])$/',$hostname)) {
+            if (preg_match('/^([12]?[0-9]?[0-9]\.){3}([12]?[0-9]?[0-9])$/', $hostname)) {
                 // IPv4 address
                 $ip4s[] = $hostname;
-            } elseif (preg_match('/^([0-9a-f:]+):[0-9a-f]{1,4}$/i',$hostname)) {
+            } elseif (preg_match('/^([0-9a-f:]+):[0-9a-f]{1,4}$/i', $hostname)) {
                 // IPv6 address
                 $ip6s[] = $hostname;
             } else { // Do a DNS lookup
                 if (!self::$forceIpv4) {
                     // if not in IPv4 only mode, check the AAAA records first
-                    $records = dns_get_record($hostname,DNS_AAAA);
+                    $records = dns_get_record($hostname, DNS_AAAA);
                     if ($records === false && $this->debug) {
-                        call_user_func($this->debugHandler, 'DNS lookup for AAAA records for: '.$hostname.' failed');
+                        call_user_func($this->debugHandler, 'DNS lookup for AAAA records for: ' . $hostname . ' failed');
                     }
                     if ($records) {
                         foreach ($records as $r) {
@@ -101,14 +119,14 @@ class Socket
                         }
                     }
                     if ($this->debug) {
-                        call_user_func($this->debugHandler, "IPv6 addresses for $hostname: ".implode(', ',$ip6s));
+                        call_user_func($this->debugHandler, "IPv6 addresses for $hostname: " . implode(', ', $ip6s));
                     }
                 }
                 if (!self::$forceIpv6) {
                     // if not in IPv6 mode check the A records also
-                    $records = dns_get_record($hostname,DNS_A);
+                    $records = dns_get_record($hostname, DNS_A);
                     if ($records === false && $this->debug) {
-                        call_user_func($this->debugHandler, 'DNS lookup for A records for: '.$hostname.' failed');
+                        call_user_func($this->debugHandler, 'DNS lookup for A records for: ' . $hostname . ' failed');
                     }
                     if ($records) {
                         foreach ($records as $r) {
@@ -119,11 +137,11 @@ class Socket
                     }
                     // also try gethostbyname, since name could also be something else, such as "localhost" etc.
                     $ip = gethostbyname($hostname);
-                    if ($ip != $hostname && !in_array($ip,$ip4s)) {
+                    if ($ip != $hostname && !in_array($ip, $ip4s)) {
                         $ip4s[] = $ip;
                     }
                     if ($this->debug) {
-                        call_user_func($this->debugHandler, "IPv4 addresses for $hostname: ".implode(', ',$ip4s));
+                        call_user_func($this->debugHandler, "IPv4 addresses for $hostname: " . implode(', ', $ip4s));
                     }
                 }
             }
@@ -194,7 +212,7 @@ class Socket
     /**
      * Sets the send timeout.
      * Returns true on success, or false.
-     * @param int $timeout	Timeout in milliseconds.
+     * @param int $timeout Timeout in milliseconds.
      * @return bool
      */
     public function setSendTimeout(int $timeout): bool
@@ -214,7 +232,7 @@ class Socket
     /**
      * Sets the receive timeout.
      * Returns true on success, or false.
-     * @param int $timeout	Timeout in milliseconds.
+     * @param int $timeout Timeout in milliseconds.
      * @return bool
      */
     public function setRecvTimeout(int $timeout): bool
@@ -247,9 +265,9 @@ class Socket
         $w = null;
         $e = [$this->socket];
 
-        if (socket_select($r,$w,$e,0) === false) {
+        if (socket_select($r, $w, $e, 0) === false) {
             throw new SocketTransportException(
-                'Could not examine socket; '.socket_strerror(socket_last_error()),
+                'Could not examine socket; ' . socket_strerror(socket_last_error()),
                 socket_last_error()
             );
         }
@@ -272,8 +290,8 @@ class Socket
     {
         $usec = $millisec * 1000;
         return [
-            'sec' => floor($usec/1000000),
-            'usec' => $usec%1000000
+            'sec' => floor($usec / 1000000),
+            'usec' => $usec % 1000000
         ];
     }
 
@@ -289,7 +307,8 @@ class Socket
         $sendTimeout = $this->millisecToSolArray(self::$defaultSendTimeout);
         $receiveTimeout = $this->millisecToSolArray(self::$defaultRecvTimeout);
         if (!self::$forceIpv4) {
-            $socket6 = @socket_create(AF_INET6,SOCK_STREAM,SOL_TCP);
+            /** @var SocketClass|false $socket6 */
+            $socket6 = @socket_create(AF_INET6, SOCK_STREAM, SOL_TCP);
             if ($socket6 == false) {
                 throw new SocketTransportException(
                     'Could not create socket; ' . socket_strerror(socket_last_error()),
@@ -300,7 +319,8 @@ class Socket
             socket_set_option($socket6, SOL_SOCKET, SO_RCVTIMEO, $receiveTimeout);
         }
         if (!self::$forceIpv6) {
-            $socket4 = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
+            /** @var SocketClass|false $socket4 */
+            $socket4 = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
             if ($socket4 == false) {
                 throw new SocketTransportException(
                     'Could not create socket; ' . socket_strerror(socket_last_error()),
@@ -327,7 +347,7 @@ class Socket
                         $this->socket = $socket6;
                         return;
                     } elseif ($this->debug) {
-                        call_user_func($this->debugHandler, "Socket connect to $ip:$port failed; ".socket_strerror(socket_last_error()));
+                        call_user_func($this->debugHandler, "Socket connect to $ip:$port failed; " . socket_strerror(socket_last_error()));
                     }
                 }
             }
@@ -345,7 +365,7 @@ class Socket
                         $this->socket = $socket4;
                         return;
                     } elseif ($this->debug) {
-                        call_user_func($this->debugHandler, "Socket connect to $ip:$port failed; ".socket_strerror(socket_last_error()));
+                        call_user_func($this->debugHandler, "Socket connect to $ip:$port failed; " . socket_strerror(socket_last_error()));
                     }
                 }
             }
@@ -376,7 +396,7 @@ class Socket
         $r = [$this->socket];
         $w = null;
         $e = null;
-        if (socket_select($r,$w,$e,0) === false) {
+        if (socket_select($r, $w, $e, 0) === false) {
             throw new SocketTransportException(
                 'Could not examine socket; ' . socket_strerror(socket_last_error()),
                 socket_last_error()
@@ -402,14 +422,14 @@ class Socket
      */
     public function read($length): false|string
     {
-        $d = socket_read($this->socket,$length,PHP_BINARY_READ);
+        $d = socket_read($this->socket, $length, PHP_BINARY_READ);
         // sockets give EAGAIN on timeout
         if ($d === false && socket_last_error() === SOCKET_EAGAIN) {
             return false;
         }
         if ($d === false) {
             throw new SocketTransportException(
-                'Could not read '.$length.' bytes from socket; '.socket_strerror(socket_last_error()),
+                'Could not read ' . $length . ' bytes from socket; ' . socket_strerror(socket_last_error()),
                 socket_last_error()
             );
         }
@@ -431,10 +451,10 @@ class Socket
     {
         $d = "";
         $r = 0;
-        $readTimeout = socket_get_option($this->socket,SOL_SOCKET,SO_RCVTIMEO);
+        $readTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_RCVTIMEO);
         while ($r < $length) {
             $buf = '';
-            $r += socket_recv($this->socket,$buf,$length-$r,MSG_DONTWAIT);
+            $r += socket_recv($this->socket, $buf, $length - $r, MSG_DONTWAIT);
             if ($r === false) {
                 throw new SocketTransportException(
                     'Could not read ' . $length . ' bytes from socket; ' . socket_strerror(socket_last_error()),
@@ -452,7 +472,7 @@ class Socket
             $e = [$this->socket];
 
             // check
-            if (socket_select($r,$w,$e, $readTimeout['sec'], $readTimeout['usec']) === false) {
+            if (socket_select($r, $w, $e, $readTimeout['sec'], $readTimeout['usec']) === false) {
                 throw new SocketTransportException(
                     'Could not examine socket; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
@@ -480,7 +500,7 @@ class Socket
     public function write($buffer, int $length)
     {
         $r = $length;
-        $writeTimeout = socket_get_option($this->socket,SOL_SOCKET,SO_SNDTIMEO);
+        $writeTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_SNDTIMEO);
 
         while ($r > 0) {
             $wrote = socket_write($this->socket, $buffer, $r);
@@ -503,7 +523,7 @@ class Socket
             $e = [$this->socket];
 
             // check
-            if (socket_select($r,$w,$e, $writeTimeout['sec'], $writeTimeout['usec']) === false) {
+            if (socket_select($r, $w, $e, $writeTimeout['sec'], $writeTimeout['usec']) === false) {
                 throw new SocketTransportException(
                     'Could not examine socket; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
