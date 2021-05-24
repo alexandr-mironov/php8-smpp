@@ -9,7 +9,7 @@ class Host implements ItemInterface
 
     public function __construct(
         private string $host,
-        private int $port,
+        private ?int $port = null,
     )
     {
 

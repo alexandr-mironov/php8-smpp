@@ -90,6 +90,15 @@ class Collection extends IteratorIterator
     }
 
     /**
+     * Shuffle items in collection
+     * @return void
+     */
+    public function shuffle(): void
+    {
+        shuffle($this->items);
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string

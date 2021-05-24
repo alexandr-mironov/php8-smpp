@@ -3,6 +3,11 @@
 
 namespace smpp;
 
+use DateInterval;
+use DateTime;
+use Exception;
+use InvalidArgumentException;
+use RuntimeException;
 use smpp\exceptions\SmppException;
 use smpp\transport\Socket;
 
@@ -96,26 +101,21 @@ class Client
     /** @var int */
     protected int $sarMessageReferenceNumber;
 
+    /** @var LoggerDecorator */
+    public LoggerDecorator $logger;
+
     /**
      * Construct the SMPP class
      *
      * @param Socket $transport
-     * @param string|null $debugHandler
+     * @param LoggerInterface ...$loggers
      */
     public function __construct(
         public Socket $transport,
-        string|null $debugHandler = null
+        LoggerInterface ...$loggers
     )
     {
-        // Internal parameters
-        //$this->sequenceNumber = 1;
-        //$this->debug = false;
-        //$this->pduQueue = [];
-
-        //$this->transport = $transport;
-
-        $this->debugHandler = ($debugHandler && is_callable($debugHandler)) ? $debugHandler : 'error_log';
-        //$this->mode = null;
+        $this->logger = new LoggerDecorator(...$loggers);
     }
 
     /**
@@ -124,22 +124,20 @@ class Client
      * @param string $pass - ESME password
      * @return bool
      * @throws SmppException
-     * @throws \Exception
+     * @throws Exception
      */
     public function bindReceiver(string $login, string $pass)
     {
         if (!$this->transport->isOpen()) {
             return false;
         }
-        if ($this->debug) {
-            call_user_func($this->debugHandler, 'Binding receiver...');
-        }
+
+        $this->logger->info('Binding receiver...');
 
         $response = $this->bind($login, $pass, Smpp::BIND_RECEIVER);
 
-        if ($this->debug) {
-            call_user_func($this->debugHandler, "Binding status  : " . $response->status);
-        }
+        $this->logger->info("Binding status  : " . $response->status);
+        
         $this->mode = self::MODE_RECEIVER;
         $this->login = $login;
         $this->pass = $pass;
@@ -151,7 +149,7 @@ class Client
      * @param string $pass - ESME password
      * @return bool
      * @throws SmppException
-     * @throws \Exception
+     * @throws Exception
      */
     public function bindTransmitter(string $login, string $pass)
     {
@@ -177,7 +175,7 @@ class Client
      * @param $login
      * @param $pass
      * @return bool
-     * @throws \Exception
+     * @throws Exception
      */
     public function bindTransceiver(string $login, string $pass)
     {
@@ -223,7 +221,7 @@ class Client
      * @param string $input
      * @param boolean $newDates
      * @return mixed
-     * @throws \Exception
+     * @throws Exception
      */
     public function parseSmppTime(string $input, bool $newDates = true)
     {
@@ -251,7 +249,7 @@ class Client
                 if ($h) $spec .= $h . 'H';
                 if ($i) $spec .= $i . 'M';
                 if ($s) $spec .= $s . 'S';
-                return new \DateInterval($spec);
+                return new DateInterval($spec);
             } else {
                 return strtotime("+$y year +$m month +$d day +$h hour +$i minute $s +second");
             }
@@ -260,7 +258,7 @@ class Client
             $offsetMinutes = ($n % 4) * 15;
             $time = sprintf("20%02s-%02s-%02sT%02s:%02s:%02s%s%02s:%02s", $y, $m, $d, $h, $i, $s, $p, $offsetHours, $offsetMinutes); // Not Y3K safe
             if ($newDates) {
-                return new \DateTime($time);
+                return new DateTime($time);
             } else {
                 return strtotime($time);
             }
@@ -277,7 +275,7 @@ class Client
      * @param string $messageID
      * @param Address $source
      * @return null|array
-     * @throws \Exception
+     * @throws Exception
      */
     public function queryStatus(string $messageID, Address $source): null|array
     {
@@ -578,7 +576,7 @@ class Client
                     if ($message[$i * $split - 1] == "\x1B") {
                         $slowSplit = true;
                         break;
-                    };
+                    }
                 }
                 if (!$slowSplit) {
                     return str_split($message, $split);
@@ -612,7 +610,7 @@ class Client
      * @param $pass
      * @param $commandID
      * @return bool|Pdu
-     * @throws \Exception
+     * @throws Exception
      */
     protected function bind($login, $pass, $commandID)
     {
@@ -647,7 +645,7 @@ class Client
     {
         // Check command id
         if ($pdu->id != Smpp::DELIVER_SM) {
-            throw new \InvalidArgumentException('PDU is not an received SMS');
+            throw new InvalidArgumentException('PDU is not an received SMS');
         }
 
         // Unpack PDU
@@ -743,7 +741,7 @@ class Client
     /**
      * Send the enquire link command.
      * @return Pdu
-     * @throws \Exception
+     * @throws Exception
      */
     public function enquireLink()
     {
@@ -784,7 +782,7 @@ class Client
     /**
      * Reconnect to SMSC.
      * This is mostly to deal with the situation were we run out of sequence numbers
-     * @throws \Exception
+     * @throws Exception
      */
     protected function reconnect()
     {
@@ -797,7 +795,7 @@ class Client
             self::MODE_TRANSMITTER => $this->bindTransmitter($this->login, $this->pass),
             self::MODE_RECEIVER => $this->bindReceiver($this->login, $this->pass),
             self::MODE_TRANSCEIVER => $this->bindTransceiver($this->login, $this->pass),
-            default => throw new \Exception('Invalid mode: ' . $this->mode)
+            default => throw new Exception('Invalid mode: ' . $this->mode)
         };
     }
 
@@ -806,7 +804,7 @@ class Client
      * @param integer $id - command ID
      * @param string $pduBody - PDU body
      * @return bool|Pdu
-     * @throws \Exception
+     * @throws Exception
      */
     protected function sendCommand($id, $pduBody)
     {
@@ -933,7 +931,7 @@ class Client
         $bodyLength = $length - 16;
         if ($bodyLength > 0) {
             if (!$body = $this->transport->readAll($bodyLength)) {
-                throw new \RuntimeException('Could not read PDU body');
+                throw new RuntimeException('Could not read PDU body');
             }
         } else {
             $body = null;
@@ -999,7 +997,7 @@ class Client
         );
 
         if (!$unpackedData) {
-            throw new \InvalidArgumentException('Could not read tag data');
+            throw new InvalidArgumentException('Could not read tag data');
         }
         /**
          * Extraction create variables:

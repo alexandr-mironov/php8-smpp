@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
 
 namespace smpp\transport;
 
 use JetBrains\PhpStorm\ArrayShape;
+use smpp\Collection;
 use smpp\exceptions\SocketTransportException;
+use smpp\HostCollection;
 use Socket as SocketClass;
 
 /**
@@ -52,25 +55,29 @@ class Socket
     /** @var bool */
     public static bool $randomHost = false;
 
+    /** @var HostCollection  */
+    protected HostCollection $hostCollection;
+
     /**
      * Construct a new socket for this transport to use.
      *
      * @param array $hosts list of hosts to try.
      * @param mixed $ports list of ports to try, or a single common port
      * @param boolean $persist use persistent sockets
-     * @param mixed $debugHandler callback for debug info
+     * @param ?callable $debugHandler callback for debug info
      */
     public function __construct(
         array $hosts,
         array|int|string $ports,
         protected bool $persist = false,
-        mixed $debugHandler = null
+        ?callable $debugHandler = null
     )
     {
         $this->debug = self::$defaultDebug;
-        $this->debugHandler = (isset($debugHandler) && is_callable($debugHandler)) ? $debugHandler : 'error_log';
+        $this->debugHandler = $debugHandler ?? 'error_log';
 
         // Deal with optional port
+        $this->hostCollection = new HostCollection();
         $h = [];
         foreach ($hosts as $key => $host) {
             $h[] = [
