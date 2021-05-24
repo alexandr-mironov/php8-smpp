@@ -161,8 +161,8 @@ class GsmEncoderHelper
      */
     public static function countGsm0338Length(string $utf8String): int
     {
-        $len = mb_strlen($utf8String,'utf-8');
-        $len += preg_match_all('/[\\^{}\\\~€|\\[\\]]/mu',$utf8String,$m);
+        $len = mb_strlen($utf8String, 'utf-8');
+        $len += preg_match_all('/[\\^{}\\\~€|\\[\\]]/mu', $utf8String, $m);
         return $len;
     }
 
@@ -191,7 +191,7 @@ class GsmEncoderHelper
                 // the current byte is full, add it to the encoded data.
                 $packed .= chr($currentByte);
                 // shift left and append the left shifted septet to the current byte
-                $currentByte = $septet = $septet >> (7 - ($offset - 8 ));
+                $currentByte = $septet = $septet >> (7 - ($offset - 8));
                 // update offset
                 // 7 - (7 - ($offset - 8))
                 $offset -= 8;

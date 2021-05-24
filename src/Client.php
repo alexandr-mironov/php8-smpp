@@ -68,22 +68,33 @@ class Client
     /** @var integer Embed a UDH in the message with 8-bit reference. */
     const CSMS_8BIT_UDH = 2;
 
+    /** @var int */
     public static $csmsMethod = self::CSMS_16BIT_TAGS;
 
+    /** @var bool */
     public bool $debug = false;
 
+    /** @var array */
     protected $pduQueue = [];
 
-//    protected Socket $transport;
+    /** @var callable|string */
     protected $debugHandler;
 
     // Used for reconnect
+    /** @var string|null */
     protected string|null $mode = null;
+
+    /** @var string */
     private string $login = '';
+
+    /** @var string */
     private string $pass = '';
 
+    /** @var int */
     protected int $sequenceNumber = 1;
-    protected $sarMessageReferenceNumber;
+
+    /** @var int */
+    protected int $sarMessageReferenceNumber;
 
     /**
      * Construct the SMPP class
