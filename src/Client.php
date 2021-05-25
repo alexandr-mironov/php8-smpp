@@ -9,6 +9,7 @@ use Exception;
 use InvalidArgumentException;
 use RuntimeException;
 use smpp\exceptions\SmppException;
+use smpp\exceptions\SocketTransportException;
 use smpp\transport\Socket;
 
 /**
@@ -20,6 +21,7 @@ use smpp\transport\Socket;
  * @see http://en.wikipedia.org/wiki/Short_message_peer-to-peer_protocol - SMPP 3.4 protocol specification
  * Derived from work done by paladin, see: http://sourceforge.net/projects/phpsmppapi/
  *
+ * Copyright (C) 2020 Alexandr Mironov
  * Copyright (C) 2011 OnlineCity
  * Copyright (C) 2006 Paladin
  *
@@ -500,7 +502,10 @@ class Client
      * @param string $scheduleDeliveryTime
      * @param string $validityPeriod
      * @param string $esmClass
+     *
      * @return string message id
+     *
+     * @throws Exception
      */
     protected function submitShortMessage(
         Address $source,
@@ -560,8 +565,10 @@ class Client
     /**
      * Get a CSMS reference number for sar_msg_ref_num.
      * Initializes with a random value, and then returns the number in sequence with each call.
+     *
+     * @return int
      */
-    protected function getCsmsReference()
+    protected function getCsmsReference(): int
     {
         $limit = (self::$csmsMethod == self::CSMS_8BIT_UDH) ? 255 : 65535;
         if (!isset($this->sarMessageReferenceNumber)) {
@@ -633,12 +640,12 @@ class Client
     /**
      * Binds the socket and opens the session on SMSC
      * @param string $login - ESME system_id
-     * @param $pass
-     * @param $commandID
+     * @param string $pass
+     * @param int $commandID (todo replace to ENUM in php 8.1)
      * @return bool|Pdu
      * @throws Exception
      */
-    protected function bind($login, $pass, $commandID)
+    protected function bind(string $login, string $pass, int $commandID): Pdu|bool
     {
         // Make PDU body
         $pduBody = pack(
@@ -829,13 +836,14 @@ class Client
      * Sends the PDU command to the SMSC and waits for response.
      * @param integer $id - command ID
      * @param string $pduBody - PDU body
-     * @return bool|Pdu
+     * @return Pdu
      * @throws Exception
      */
-    protected function sendCommand($id, $pduBody)
+    protected function sendCommand($id, $pduBody): Pdu
     {
         if (!$this->transport->isOpen()) {
-            return false;
+            throw new SocketTransportException('Socket is closed');
+            //return false;
         }
         $pdu = new Pdu($id, 0, $this->sequenceNumber, $pduBody);
         $this->sendPDU($pdu);
