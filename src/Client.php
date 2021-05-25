@@ -8,6 +8,7 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use RuntimeException;
+use smpp\exceptions\ClosedTransportException;
 use smpp\exceptions\SmppException;
 use smpp\exceptions\SocketTransportException;
 use smpp\transport\Socket;
@@ -42,7 +43,7 @@ class Client
     public const MODE_TRANSMITTER = 'transmitter';
 
     /** @var string */
-   public const MODE_TRANSCEIVER = 'transceiver';
+    public const MODE_TRANSCEIVER = 'transceiver';
 
     /** @var string */
     public const MODE_RECEIVER = 'receiver';
@@ -119,10 +120,10 @@ class Client
     /** @var string */
     protected string $mode;
 
-    /** @var string $login Login of SMPP gateway*/
+    /** @var string $login Login of SMPP gateway */
     private string $login = '';
 
-    /** @var string $pass Password of SMPP gateway*/
+    /** @var string $pass Password of SMPP gateway */
     private string $pass = '';
 
     /** @var int */
@@ -152,14 +153,15 @@ class Client
      * Binds the receiver. One object can be bound only as receiver or only as transmitter.
      * @param string $login - ESME system_id
      * @param string $pass - ESME password
-     * @return bool
+     *
      * @throws SmppException
      * @throws Exception
+     * @throws ClosedTransportException
      */
-    public function bindReceiver(string $login, string $pass)
+    public function bindReceiver(string $login, string $pass): void
     {
         if (!$this->transport->isOpen()) {
-            return false;
+            throw new ClosedTransportException();
         }
 
         $this->logger->info('Binding receiver...');
@@ -177,14 +179,13 @@ class Client
      * Binds the transmitter. One object can be bound only as receiver or only as transmitter.
      * @param string $login - ESME system_id
      * @param string $pass - ESME password
-     * @return bool
-     * @throws SmppException
+     * @return void
      * @throws Exception
      */
-    public function bindTransmitter(string $login, string $pass)
+    public function bindTransmitter(string $login, string $pass): void
     {
         if (!$this->transport->isOpen()) {
-            return false;
+            throw new ClosedTransportException();
         }
 
         $this->logger->info('Binding transmitter...');
@@ -201,13 +202,13 @@ class Client
     /**
      * @param string $login
      * @param string $pass
-     * @return bool
+     * @return void
      * @throws Exception
      */
-    public function bindTransceiver(string $login, string $pass)
+    public function bindTransceiver(string $login, string $pass): void
     {
         if (!$this->transport->isOpen()) {
-            return false;
+            throw new ClosedTransportException();
         }
 
         $this->logger->info('Binding transciever...');
@@ -336,9 +337,10 @@ class Client
     /**
      * Read one SMS from SMSC. Can be executed only after bindReceiver() call.
      * This method bloks. Method returns on socket timeout or enquire_link signal from SMSC.
+     *
      * @return DeliveryReceipt|Sms|bool
      */
-    public function readSMS()
+    public function readSMS(): bool|DeliveryReceipt|Sms
     {
         $commandID = Smpp::DELIVER_SM;
         // Check the queue
@@ -815,9 +817,10 @@ class Client
     /**
      * Reconnect to SMSC.
      * This is mostly to deal with the situation were we run out of sequence numbers
+     *
      * @throws Exception
      */
-    protected function reconnect()
+    protected function reconnect(): void
     {
         $this->close();
         sleep(1);
@@ -937,7 +940,7 @@ class Client
      * Reads incoming PDU from SMSC.
      * @return bool|Pdu
      */
-    protected function readPDU()
+    protected function readPDU(): Pdu|bool
     {
         // Read PDU length
         $bufLength = $this->transport->read(4);
