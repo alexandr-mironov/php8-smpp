@@ -16,7 +16,7 @@ use smpp\transport\Socket;
  * This is a reduced implementation of the SMPP protocol, and as such not all features will or ought to be available.
  * The purpose is to create a lightweight and simplified SMPP client.
  *
- * @author hd@onlinecity.dk, paladin
+ * @author hd@onlinecity.dk, paladin, Alexandr Mironov
  * @see http://en.wikipedia.org/wiki/Short_message_peer-to-peer_protocol - SMPP 3.4 protocol specification
  * Derived from work done by paladin, see: http://sourceforge.net/projects/phpsmppapi/
  *
@@ -35,24 +35,52 @@ use smpp\transport\Socket;
  */
 class Client
 {
-    const MODE_TRANSMITTER = 'transmitter';
+    // Available modes
+    /** @var string */
+    public const MODE_TRANSMITTER = 'transmitter';
+
+    /** @var string */
     const MODE_TRANSCEIVER = 'transceiver';
+
+    /** @var string */
     const MODE_RECEIVER = 'receiver';
 
     // SMPP bind parameters
+    /** @var string */
     public static string $systemType = "WWW";
+
+    /** @var int */
     public static int $interfaceVersion = 0x34;
+
+    /** @var int */
     public static int $addrTon = 0;
+
+    /** @var int */
     public static int $addrNPI = 0;
+
+    /** @var string */
     public static string $addressRange = "";
 
     // ESME transmitter parameters
+    /** @var string */
     public static string $smsServiceType = "";
+
+    /** @var int */
     public static int $smsEsmClass = 0x00;
+
+    /** @var int */
     public static int $smsProtocolID = 0x00;
+
+    /** @var int */
     public static int $smsPriorityFlag = 0x00;
+
+    /** @var int */
     public static int $smsRegisteredDeliveryFlag = 0x00;
+
+    /** @var int */
     public static int $smsReplaceIfPresentFlag = 0x00;
+
+    /** @var int */
     public static int $smsSmDefaultMessageID = 0x00;
 
     /**
@@ -65,13 +93,13 @@ class Client
     public static bool $smsNullTerminateOctetstrings = false;
 
     /** @var integer Use sar_msg_ref_num and sar_total_segments with 16 bit tags */
-    const CSMS_16BIT_TAGS = 0;
+    public const CSMS_16BIT_TAGS = 0;
 
     /** @var integer Use message payload for CSMS */
-    const CSMS_PAYLOAD = 1;
+    public const CSMS_PAYLOAD = 1;
 
     /** @var integer Embed a UDH in the message with 8-bit reference. */
-    const CSMS_8BIT_UDH = 2;
+    public const CSMS_8BIT_UDH = 2;
 
     /** @var int */
     public static $csmsMethod = self::CSMS_16BIT_TAGS;
@@ -137,7 +165,7 @@ class Client
         $response = $this->bind($login, $pass, Smpp::BIND_RECEIVER);
 
         $this->logger->info("Binding status  : " . $response->status);
-        
+
         $this->mode = self::MODE_RECEIVER;
         $this->login = $login;
         $this->pass = $pass;
@@ -157,23 +185,20 @@ class Client
             return false;
         }
 
-        if ($this->debug) {
-            call_user_func($this->debugHandler, 'Binding transmitter...');
-        }
+        $this->logger->info('Binding transmitter...');
 
         $response = $this->bind($login, $pass, Smpp::BIND_TRANSMITTER);
 
-        if ($this->debug) {
-            call_user_func($this->debugHandler, "Binding status  : " . $response->status);
-        }
+        $this->logger->info("Binding status  : " . $response->status);
+
         $this->mode = self::MODE_TRANSMITTER;
         $this->login = $login;
         $this->pass = $pass;
     }
 
     /**
-     * @param $login
-     * @param $pass
+     * @param string $login
+     * @param string $pass
      * @return bool
      * @throws Exception
      */
@@ -183,11 +208,12 @@ class Client
             return false;
         }
 
+        $this->logger->info('Binding transciever...');
+
         $response = $this->bind($login, $pass, Smpp::BIND_TRANSCEIVER);
 
-        if ($this->debug) {
-            call_user_func($this->debugHandler, "Binding status  : " . $response->status);
-        }
+        $this->logger->info("Binding status  : " . $response->status);
+
         $this->mode = self::MODE_TRANSCEIVER;
         $this->login = $login;
         $this->pass = $pass;
