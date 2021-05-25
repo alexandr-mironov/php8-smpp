@@ -7,7 +7,6 @@ use DateInterval;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
-use JetBrains\PhpStorm\Pure;
 use RuntimeException;
 use smpp\exceptions\ClosedTransportException;
 use smpp\exceptions\SmppException;
@@ -108,14 +107,8 @@ class Client
     /** @var int */
     public static $csmsMethod = self::CSMS_16BIT_TAGS;
 
-    /** @var bool */
-    public bool $debug = false;
-
     /** @var array */
     protected $pduQueue = [];
-
-    /** @var callable|string */
-    protected $debugHandler;
 
     // Used for reconnect
     /** @var string */
@@ -758,9 +751,7 @@ class Client
             );
         }
 
-        if ($this->debug) {
-            call_user_func($this->debugHandler, "Received sms:\n" . print_r($sms, true));
-        }
+        $this->logger->info("Received sms:\n" . print_r($sms, true));
 
         // Send response of recieving sms
         $response = new Pdu(Smpp::DELIVER_SM_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
