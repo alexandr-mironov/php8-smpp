@@ -880,12 +880,11 @@ class Client
         $length = strlen($pdu->body) + 16;
         $header = pack("NNNN", $length, $pdu->id, $pdu->status, $pdu->sequence);
 
-        if ($this->debug) {
-            call_user_func($this->debugHandler, "Send PDU         : $length bytes");
-            call_user_func($this->debugHandler, ' ' . chunk_split(bin2hex($header . $pdu->body), 2, " "));
-            call_user_func($this->debugHandler, ' command_id      : 0x' . dechex($pdu->id));
-            call_user_func($this->debugHandler, ' sequence number : ' . $pdu->sequence);
-        }
+        $this->logger->info("Read PDU         : $length bytes");
+        $this->logger->info(' ' . chunk_split(bin2hex($header . $pdu->body), 2, " "));
+        $this->logger->info(' command_id      : 0x' . dechex($pdu->id));
+        $this->logger->info(' sequence number : ' . $pdu->sequence);
+
         $this->transport->write($header . $pdu->body, $length);
     }
 
@@ -894,12 +893,12 @@ class Client
      * If a GENERIC_NACK with a matching sequence number, or null sequence is received instead it's also accepted.
      * Some SMPP servers, ie. logica returns GENERIC_NACK on errors.
      *
-     * @param integer $sequenceNumber - PDU sequence number
-     * @param integer $commandID - PDU command ID
+     * @param int $sequenceNumber - PDU sequence number
+     * @param int $commandID - PDU command ID
      * @return Pdu|bool
      * @throws SmppException
      */
-    protected function readPduResponse($sequenceNumber, $commandID)
+    protected function readPduResponse(int $sequenceNumber, int $commandID): Pdu|bool
     {
         // Get response cmd id from command ID
         $commandID = $commandID | Smpp::GENERIC_NACK;
