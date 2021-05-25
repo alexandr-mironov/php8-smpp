@@ -1058,12 +1058,12 @@ class Client
 
         $value = $this->getOctets($ar, $length);
         $tag = new Tag($id, $value, $length);
-        if ($this->debug) {
-            call_user_func($this->debugHandler, "Parsed tag:");
-            call_user_func($this->debugHandler, " id     :0x" . dechex($tag->id));
-            call_user_func($this->debugHandler, " length :" . $tag->length);
-            call_user_func($this->debugHandler, " value  :" . chunk_split(bin2hex($tag->value), 2, " "));
-        }
+
+        $this->logger->info("Parsed tag:");
+        $this->logger->info(" id     :0x" . dechex($tag->id));
+        $this->logger->info(" length :" . $tag->length);
+        $this->logger->info(" value  :" . chunk_split(bin2hex($tag->value), 2, " "));
+
         return $tag;
     }
 }
