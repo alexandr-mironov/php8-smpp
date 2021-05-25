@@ -40,10 +40,19 @@ class Client
     public const MODE_TRANSMITTER = 'transmitter';
 
     /** @var string */
-    const MODE_TRANSCEIVER = 'transceiver';
+   public const MODE_TRANSCEIVER = 'transceiver';
 
     /** @var string */
-    const MODE_RECEIVER = 'receiver';
+    public const MODE_RECEIVER = 'receiver';
+
+    /** @var integer Use sar_msg_ref_num and sar_total_segments with 16 bit tags */
+    public const CSMS_16BIT_TAGS = 0;
+
+    /** @var integer Use message payload for CSMS */
+    public const CSMS_PAYLOAD = 1;
+
+    /** @var integer Embed a UDH in the message with 8-bit reference. */
+    public const CSMS_8BIT_UDH = 2;
 
     // SMPP bind parameters
     /** @var string */
@@ -92,15 +101,6 @@ class Client
      */
     public static bool $smsNullTerminateOctetstrings = false;
 
-    /** @var integer Use sar_msg_ref_num and sar_total_segments with 16 bit tags */
-    public const CSMS_16BIT_TAGS = 0;
-
-    /** @var integer Use message payload for CSMS */
-    public const CSMS_PAYLOAD = 1;
-
-    /** @var integer Embed a UDH in the message with 8-bit reference. */
-    public const CSMS_8BIT_UDH = 2;
-
     /** @var int */
     public static $csmsMethod = self::CSMS_16BIT_TAGS;
 
@@ -114,13 +114,13 @@ class Client
     protected $debugHandler;
 
     // Used for reconnect
-    /** @var string|null */
-    protected string|null $mode = null;
-
     /** @var string */
+    protected string $mode;
+
+    /** @var string $login Login of SMPP gateway*/
     private string $login = '';
 
-    /** @var string */
+    /** @var string $pass Password of SMPP gateway*/
     private string $pass = '';
 
     /** @var int */
