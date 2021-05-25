@@ -953,9 +953,6 @@ class Client
         /**
          * extraction define next variables:
          * @var $length
-         * @var $command_id
-         * @var $command_status
-         * @var $sequence_number
          */
         extract(unpack("Nlength", $bufLength));
 
@@ -964,7 +961,13 @@ class Client
         if (!$bufHeaders) {
             return false;
         }
-        extract(unpack("Ncommand_id/Ncommand_status/Nsequence_number", $bufHeaders));
+
+        /**
+         * @var $commandID
+         * @var $commandStatus
+         * @var $sequenceNumber
+         */
+        extract(unpack("NcommandID/NcommandStatus/NsequenceNumber", $bufHeaders));
 
         // Read PDU body
         $bodyLength = $length - 16;
@@ -976,14 +979,13 @@ class Client
             $body = null;
         }
 
-        if ($this->debug) {
-            call_user_func($this->debugHandler, "Read PDU         : $length bytes");
-            call_user_func($this->debugHandler, ' ' . chunk_split(bin2hex($bufLength . $bufHeaders . $body), 2, " "));
-            call_user_func($this->debugHandler, " command id      : 0x" . dechex($command_id));
-            call_user_func($this->debugHandler, " command status  : 0x" . dechex($command_status) . " " . Smpp::getStatusMessage($command_status));
-            call_user_func($this->debugHandler, ' sequence number : ' . $sequence_number);
-        }
-        return new Pdu($command_id, $command_status, $sequence_number, $body);
+        $this->logger->info("Read PDU         : $length bytes");
+        $this->logger->info(' ' . chunk_split(bin2hex($bufLength . $bufHeaders . $body), 2, " "));
+        $this->logger->info(" command id      : 0x" . dechex($commandID));
+        $this->logger->info(" command status  : 0x" . dechex($commandStatus) . " " . Smpp::getStatusMessage($commandStatus));
+        $this->logger->info(' sequence number : ' . $sequenceNumber);
+
+        return new Pdu($commandID, $commandStatus, $sequenceNumber, $body);
     }
 
     /**
