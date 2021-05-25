@@ -997,7 +997,7 @@ class Client
      * @param boolean $firstRead - is this the first bytes read from array?
      * @return string.
      */
-    protected function getString(&$ar, $maxLength = 255, $firstRead = false): string
+    protected function getString(array &$ar, int $maxLength = 255, bool $firstRead = false): string
     {
         $s = "";
         $i = 0;
@@ -1017,7 +1017,7 @@ class Client
      * @param int $length
      * @return string
      */
-    protected function getOctets(&$ar, $length): string
+    protected function getOctets(array &$ar, int $length): string
     {
         $s = "";
         for ($i = 0; $i < $length; $i++) {
@@ -1030,7 +1030,11 @@ class Client
         return $s;
     }
 
-    protected function parseTag(&$ar): bool|Tag
+    /**
+     * @param array $ar
+     * @return bool|Tag
+     */
+    protected function parseTag(array &$ar): bool|Tag
     {
         $unpackedData = unpack(
             'nid/nlength',
