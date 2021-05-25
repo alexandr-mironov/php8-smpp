@@ -224,21 +224,22 @@ class Client
 
     /**
      * Closes the session on the SMSC server.
+     *
+     * @return void
+     * @throws Exception
      */
-    public function close()
+    public function close(): void
     {
         if (!$this->transport->isOpen()) {
             return;
         }
-        if ($this->debug) {
-            call_user_func($this->debugHandler, 'Unbinding...');
-        }
+
+        $this->logger->info('Unbinding...');
 
         $response = $this->sendCommand(Smpp::UNBIND, "");
 
-        if ($this->debug) {
-            call_user_func($this->debugHandler, "Unbind status   : " . $response->status);
-        }
+        $this->logger->info("Unbind status   : " . $response->status);
+
         $this->transport->close();
     }
 
@@ -252,7 +253,7 @@ class Client
      * @return mixed
      * @throws Exception
      */
-    public function parseSmppTime(string $input, bool $newDates = true)
+    public function parseSmppTime(string $input, bool $newDates = true): mixed
     {
         // Check for support for new date classes
         if (!class_exists('DateTime') || !class_exists('DateInterval')) {
@@ -400,7 +401,7 @@ class Client
         $priority = 0x00,
         $scheduleDeliveryTime = null,
         $validityPeriod = null
-    )
+    ): bool|string
     {
         $messageLength = strlen($message);
 
@@ -595,7 +596,7 @@ class Client
      * @param integer $dataCoding (optional)
      * @return array
      */
-    protected function splitMessageString($message, $split, $dataCoding = Smpp::DATA_CODING_DEFAULT)
+    protected function splitMessageString($message, $split, $dataCoding = Smpp::DATA_CODING_DEFAULT): array
     {
         switch ($dataCoding) {
             case Smpp::DATA_CODING_DEFAULT:
@@ -676,7 +677,7 @@ class Client
      * @param Pdu $pdu - received PDU from SMSC.
      * @return DeliveryReceipt|Sms parsed PDU as array.
      */
-    protected function parseSMS(Pdu $pdu)
+    protected function parseSMS(Pdu $pdu): DeliveryReceipt|Sms
     {
         // Check command id
         if ($pdu->id != Smpp::DELIVER_SM) {
@@ -778,7 +779,7 @@ class Client
      * @return Pdu
      * @throws Exception
      */
-    public function enquireLink()
+    public function enquireLink(): Pdu
     {
         return $this->sendCommand(Smpp::ENQUIRE_LINK, null);
     }
@@ -837,12 +838,12 @@ class Client
 
     /**
      * Sends the PDU command to the SMSC and waits for response.
-     * @param integer $id - command ID
+     * @param int $id - command ID
      * @param string $pduBody - PDU body
      * @return Pdu
      * @throws Exception
      */
-    protected function sendCommand($id, $pduBody): Pdu
+    protected function sendCommand(int $id, string $pduBody): Pdu
     {
         if (!$this->transport->isOpen()) {
             throw new SocketTransportException('Socket is closed');
@@ -878,6 +879,7 @@ class Client
     {
         $length = strlen($pdu->body) + 16;
         $header = pack("NNNN", $length, $pdu->id, $pdu->status, $pdu->sequence);
+
         if ($this->debug) {
             call_user_func($this->debugHandler, "Send PDU         : $length bytes");
             call_user_func($this->debugHandler, ' ' . chunk_split(bin2hex($header . $pdu->body), 2, " "));
@@ -993,7 +995,7 @@ class Client
      * @param boolean $firstRead - is this the first bytes read from array?
      * @return string.
      */
-    protected function getString(&$ar, $maxLength = 255, $firstRead = false)
+    protected function getString(&$ar, $maxLength = 255, $firstRead = false): string
     {
         $s = "";
         $i = 0;
@@ -1013,7 +1015,7 @@ class Client
      * @param int $length
      * @return string
      */
-    protected function getOctets(&$ar, $length)
+    protected function getOctets(&$ar, $length): string
     {
         $s = "";
         for ($i = 0; $i < $length; $i++) {
@@ -1026,7 +1028,7 @@ class Client
         return $s;
     }
 
-    protected function parseTag(&$ar)
+    protected function parseTag(&$ar): bool|Tag
     {
         $unpackedData = unpack(
             'nid/nlength',
