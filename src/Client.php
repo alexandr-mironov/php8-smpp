@@ -7,6 +7,7 @@ use DateInterval;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use JetBrains\PhpStorm\Pure;
 use RuntimeException;
 use smpp\exceptions\ClosedTransportException;
 use smpp\exceptions\SmppException;
@@ -96,11 +97,11 @@ class Client
     public static int $smsSmDefaultMessageID = 0x00;
 
     /**
-     * SMPP v3.4 says octect string are "not necessarily NULL terminated".
+     * SMPP v3.4 says octet string are "not necessarily NULL terminated".
      * Switch to toggle this feature
      * @var boolean
      *
-     * set NULL teminate octetstrings FALSE as default
+     * set NULL terminate octetstrings FALSE as default
      */
     public static bool $smsNullTerminateOctetstrings = false;
 
@@ -154,6 +155,8 @@ class Client
      * @param string $login - ESME system_id
      * @param string $pass - ESME password
      *
+     * @return void
+     *
      * @throws SmppException
      * @throws Exception
      * @throws ClosedTransportException
@@ -177,9 +180,12 @@ class Client
 
     /**
      * Binds the transmitter. One object can be bound only as receiver or only as transmitter.
+     *
      * @param string $login - ESME system_id
      * @param string $pass - ESME password
+     *
      * @return void
+     *
      * @throws Exception
      */
     public function bindTransmitter(string $login, string $pass): void
@@ -200,9 +206,14 @@ class Client
     }
 
     /**
-     * @param string $login
-     * @param string $pass
+     * Bind transceiver, this object bound as receiver and transmitter at same time,
+     * only if available in SMPP gateway
+     *
+     * @param string $login - ESME system_id
+     * @param string $pass - ESME password
+     *
      * @return void
+     *
      * @throws Exception
      */
     public function bindTransceiver(string $login, string $pass): void
@@ -245,53 +256,35 @@ class Client
 
     /**
      * Parse a timestring as formatted by SMPP v3.4 section 7.1.
-     * Returns an unix timestamp if $newDates is false or DateTime/DateInterval is missing,
-     * otherwise an object of either DateTime or DateInterval is returned.
+     * Returns an object of either DateTime or DateInterval is returned.
      *
      * @param string $input
-     * @param boolean $newDates
-     * @return mixed
+     * @return DateTime|DateInterval|null
      * @throws Exception
      */
-    public function parseSmppTime(string $input, bool $newDates = true): mixed
+    public function parseSmppTime(string $input): null|DateTime|DateInterval
     {
-        // Check for support for new date classes
-        if (!class_exists('DateTime') || !class_exists('DateInterval')) {
-            $newDates = false;
-        }
-
-        $numMatch = preg_match('/^(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{1})(\\d{2})([R+-])$/', $input, $matches);
-
-        if (!$numMatch) {
+        if (!preg_match('/^(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{1})(\\d{2})([R+-])$/', $input, $matches)) {
             return null;
         }
 
         [$whole, $y, $m, $d, $h, $i, $s, $t, $n, $p] = $matches;
 
-        // Use strtotime to convert relative time into a unix timestamp
         if ($p == 'R') {
-            if ($newDates) {
-                $spec = "P";
-                if ($y) $spec .= $y . 'Y';
-                if ($m) $spec .= $m . 'M';
-                if ($d) $spec .= $d . 'D';
-                if ($h || $i || $s) $spec .= 'T';
-                if ($h) $spec .= $h . 'H';
-                if ($i) $spec .= $i . 'M';
-                if ($s) $spec .= $s . 'S';
-                return new DateInterval($spec);
-            } else {
-                return strtotime("+$y year +$m month +$d day +$h hour +$i minute $s +second");
-            }
+            $spec = "P";
+            if ($y) $spec .= $y . 'Y';
+            if ($m) $spec .= $m . 'M';
+            if ($d) $spec .= $d . 'D';
+            if ($h || $i || $s) $spec .= 'T';
+            if ($h) $spec .= $h . 'H';
+            if ($i) $spec .= $i . 'M';
+            if ($s) $spec .= $s . 'S';
+            return new DateInterval($spec);
         } else {
             $offsetHours = floor($n / 4);
             $offsetMinutes = ($n % 4) * 15;
             $time = sprintf("20%02s-%02s-%02sT%02s:%02s:%02s%s%02s:%02s", $y, $m, $d, $h, $i, $s, $p, $offsetHours, $offsetMinutes); // Not Y3K safe
-            if ($newDates) {
-                return new DateTime($time);
-            } else {
-                return strtotime($time);
-            }
+            return new DateTime($time);
         }
     }
 
@@ -386,19 +379,20 @@ class Client
      * @param Address $to
      * @param string $message
      * @param null $tags (optional)
-     * @param integer $dataCoding (optional)
-     * @param integer $priority (optional)
+     * @param int $dataCoding (optional)
+     * @param int $priority (optional)
      * @param null $scheduleDeliveryTime (optional)
      * @param null $validityPeriod (optional)
-     * @return string message id
+     * @return bool|string message id
+     * @throws Exception
      */
     public function sendSMS(
         Address $from,
         Address $to,
         string $message,
         $tags = null,
-        $dataCoding = Smpp::DATA_CODING_DEFAULT,
-        $priority = 0x00,
+        int $dataCoding = Smpp::DATA_CODING_DEFAULT,
+        int $priority = 0x00,
         $scheduleDeliveryTime = null,
         $validityPeriod = null
     ): bool|string
