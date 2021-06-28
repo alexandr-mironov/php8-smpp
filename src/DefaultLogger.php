@@ -101,7 +101,7 @@ class DefaultLogger implements LoggerInterface
     private function buildMessage(string $level, string $message, array $context = []): string
     {
         $data = ($context) ? ' Data: ' . json_encode($context) : '';
-        $result = '#'
+        return '#'
             . (new \DateTime())->format('Y-m-d H:i:s')
             . ' '
             . $level
@@ -109,6 +109,5 @@ class DefaultLogger implements LoggerInterface
             . $message
             . $data
             . PHP_EOL;
-        return $result;
     }
 }

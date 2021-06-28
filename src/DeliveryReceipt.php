@@ -3,6 +3,8 @@
 
 namespace smpp;
 
+use InvalidArgumentException;
+
 /**
  * An extension of a SMS, with data embedded into the message part of the SMS.
  * @author hd@onlinecity.dk
@@ -22,13 +24,22 @@ class DeliveryReceipt extends Sms
      * Parse a delivery receipt formatted as specified in SMPP v3.4 - Appendix B
      * It accepts all chars except space as the message id
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function parseDeliveryReceipt()
+    public function parseDeliveryReceipt(): void
     {
-        $numMatches = preg_match('/^id:([^ ]+) sub:(\d{1,3}) dlvrd:(\d{3}) submit date:(\d{10,12}) done date:(\d{10,12}) stat:([A-Z ]{7}) err:(\d{2,3}) text:(.*)$/si', $this->message, $matches);
-        if ($numMatches == 0) {
-            throw new \InvalidArgumentException('Could not parse delivery receipt: ' . $this->message . "\n" . bin2hex($this->body));
+        $numMatches = preg_match(
+            '/^id:([^ ]+) sub:(\d{1,3}) dlvrd:(\d{3}) submit date:(\d{10,12}) done date:(\d{10,12}) stat:([A-Z ]{7}) err:(\d{2,3}) text:(.*)$/si',
+            $this->message,
+            $matches
+        );
+        if ($numMatches === 0) {
+            throw new InvalidArgumentException(
+                'Could not parse delivery receipt: '
+                . $this->message
+                . "\n"
+                . bin2hex($this->body)
+            );
         }
         [
             $matched,
@@ -44,8 +55,8 @@ class DeliveryReceipt extends Sms
 
         // Convert dates
         $dp = str_split($this->submitDate, 2);
-        $this->submitDate = gmmktime($dp[3], $dp[4], isset($dp[5]) ? $dp[5] : 0, $dp[1], $dp[2], $dp[0]);
+        $this->submitDate = gmmktime($dp[3], $dp[4], $dp[5] ?? 0, $dp[1], $dp[2], $dp[0]);
         $dp = str_split($this->doneDate, 2);
-        $this->doneDate = gmmktime($dp[3], $dp[4], isset($dp[5]) ? $dp[5] : 0, $dp[1], $dp[2], $dp[0]);
+        $this->doneDate = gmmktime($dp[3], $dp[4], $dp[5] ?? 0, $dp[1], $dp[2], $dp[0]);
     }
 }

@@ -108,7 +108,7 @@ class Client
     public static $csmsMethod = self::CSMS_16BIT_TAGS;
 
     /** @var array */
-    protected $pduQueue = [];
+    protected array $pduQueue = [];
 
     // Used for reconnect
     /** @var string */
