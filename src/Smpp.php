@@ -165,12 +165,12 @@ class Smpp
 
 
     /**
-     * @param int $statuscode
+     * @param int $statusCode
      * @return string
      */
-    public static function getStatusMessage($statuscode): string
+    public static function getStatusMessage(int $statusCode): string
     {
-        return match($statuscode){
+        return match($statusCode){
             self::ESME_ROK              => 'No Error',
             self::ESME_RINVMSGLEN       => 'Message Length is invalid',
             self::ESME_RINVCMDLEN       => 'Command Length is invalid',
@@ -219,7 +219,7 @@ class Smpp
             self::ESME_RINVOPTPARAMVAL  => 'Invalid Optional Parameter Value',
             self::ESME_RDELIVERYFAILURE => 'Delivery Failure (data_sm_resp)',
             self::ESME_RUNKNOWNERR      => 'Unknown Error',
-            default                     => 'Unknown statuscode: ' . dechex($statuscode)
+            default                     => 'Unknown status code: ' . dechex($statusCode)
         };
     }
 }

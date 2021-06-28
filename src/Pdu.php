@@ -6,7 +6,10 @@
  */
 namespace smpp;
 
-
+/**
+ * Class Pdu
+ * @package smpp
+ */
 class Pdu
 {
     /**

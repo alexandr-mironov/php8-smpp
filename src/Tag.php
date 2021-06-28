@@ -80,7 +80,7 @@ class Tag
     public function getBinary(): string
     {
         if(
-            false === (
+            false == (
                 $binary = pack(
                     'nn' . $this->type,
                     $this->id,

@@ -9,5 +9,6 @@ namespace smpp;
  */
 class HostCollection extends Collection
 {
+    /** @var string */
     public const CLASSNAME = Host::class;
 }
