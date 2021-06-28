@@ -10,7 +10,7 @@ use InvalidArgumentException;
  * Class LogHandler
  * @package smpp
  */
-class LoggerDecorator implements LoggerInterface
+class LoggerDecorator implements LoggerInterface, LoggerAwareInterface
 {
     /**
      * @var LoggerInterface[]
