@@ -4,8 +4,6 @@ declare(strict_types=1);
 namespace smpp;
 
 
-use InvalidArgumentException;
-
 /**
  * Class LogHandler
  * @package smpp
@@ -99,6 +97,11 @@ class LoggerDecorator implements LoggerInterface, LoggerAwareInterface
         $this->log(self::DEBUG, $message, $context);
     }
 
+    /**
+     * @param string $level
+     * @param string $message
+     * @param array $context
+     */
     public function log(string $level, string $message, array $context = []): void
     {
         foreach ($this->loggers as $logger) {

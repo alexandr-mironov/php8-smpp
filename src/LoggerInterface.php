@@ -23,13 +23,13 @@ interface LoggerInterface
 {
     // log levels (replace to ENUM in php 8.1)
     public const EMERGENCY = 'emergency';
-    public const ALERT     = 'alert';
-    public const CRITICAL  = 'critical';
-    public const ERROR     = 'error';
-    public const WARNING   = 'warning';
-    public const NOTICE    = 'notice';
-    public const INFO      = 'info';
-    public const DEBUG     = 'debug';
+    public const ALERT = 'alert';
+    public const CRITICAL = 'critical';
+    public const ERROR = 'error';
+    public const WARNING = 'warning';
+    public const NOTICE = 'notice';
+    public const INFO = 'info';
+    public const DEBUG = 'debug';
 
     /**
      * System is unusable.
