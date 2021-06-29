@@ -6,6 +6,7 @@ namespace smpp;
 
 use Exception;
 use InvalidArgumentException;
+use smpp\exceptions\SmppInvalidArgumentException;
 
 /**
  * Primitive class to represent SMPP optional params,
@@ -80,16 +81,14 @@ class Tag
 
     /**
      * Get the TLV packed into a binary string for transport
-     *
+     * 
      * @return string
-     *
-     * @throws Exception
      */
     public function getBinary(): string
     {
         $binary = pack('nn' . $this->type, $this->id, $this->length ?? strlen($this->value), $this->value);
         if (!$binary) {
-            throw new InvalidArgumentException(
+            throw new SmppInvalidArgumentException(
                 'Format string contain errors, please check format: "'
                 . 'nn'
                 . $this->type
