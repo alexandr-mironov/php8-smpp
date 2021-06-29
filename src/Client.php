@@ -261,6 +261,16 @@ class Client
             return null;
         }
 
+        /**
+         * @var int $y
+         * @var int $m
+         * @var int $d
+         * @var int $h
+         * @var int $i
+         * @var int $s
+         * @var int $n
+         * @var string $p
+         */
         [$whole, $y, $m, $d, $h, $i, $s, $t, $n, $p] = $matches;
 
         if ($p == 'R') {
@@ -290,7 +300,19 @@ class Client
         } else {
             $offsetHours = floor($n / 4);
             $offsetMinutes = ($n % 4) * 15;
-            $time = sprintf("20%02s-%02s-%02sT%02s:%02s:%02s%s%02s:%02s", $y, $m, $d, $h, $i, $s, $p, $offsetHours, $offsetMinutes); // Not Y3K safe
+            // Not Y3K safe
+            $time = sprintf(
+                "20%02s-%02s-%02sT%02s:%02s:%02s%s%02s:%02s",
+                $y,
+                $m,
+                $d,
+                $h,
+                $i,
+                $s,
+                $p,
+                $offsetHours,
+                $offsetMinutes
+            );
             return new DateTime($time);
         }
     }
