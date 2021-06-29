@@ -7,10 +7,9 @@ namespace smpp;
 use DateInterval;
 use DateTime;
 use Exception;
-use InvalidArgumentException;
-use RuntimeException;
 use smpp\exceptions\ClosedTransportException;
 use smpp\exceptions\SmppException;
+use smpp\exceptions\SmppInvalidArgumentException;
 use smpp\exceptions\SocketTransportException;
 use smpp\transport\Socket;
 
@@ -152,7 +151,6 @@ class Client
      * @return void
      *
      * @throws SmppException
-     * @throws Exception
      * @throws ClosedTransportException
      */
     public function bindReceiver(string $login, string $pass): void
@@ -486,13 +484,13 @@ class Client
      *
      * @param Address $source
      * @param Address $destination
-     * @param string $shortMessage
-     * @param array $tags
+     * @param string|null $shortMessage
+     * @param array|null $tags
      * @param integer $dataCoding
      * @param integer $priority
-     * @param string $scheduleDeliveryTime
-     * @param string $validityPeriod
-     * @param string $esmClass
+     * @param string|null $scheduleDeliveryTime
+     * @param string|null $validityPeriod
+     * @param string|null $esmClass
      *
      * @return string message id
      *
@@ -501,13 +499,13 @@ class Client
     protected function submitShortMessage(
         Address $source,
         Address $destination,
-        $shortMessage = null,
-        $tags = null,
-        $dataCoding = Smpp::DATA_CODING_DEFAULT,
-        $priority = 0x00,
-        $scheduleDeliveryTime = null,
-        $validityPeriod = null,
-        $esmClass = null
+        string $shortMessage = null,
+        array $tags = null,
+        int $dataCoding = Smpp::DATA_CODING_DEFAULT,
+        int $priority = 0x00,
+        string $scheduleDeliveryTime = null,
+        string $validityPeriod = null,
+        string $esmClass = null
     ): string
     {
         if (is_null($esmClass)) {
@@ -630,21 +628,25 @@ class Client
 
     /**
      * Binds the socket and opens the session on SMSC
+     *
      * @param string $login - ESME system_id
      * @param string $pass
      * @param int $commandID (todo replace to ENUM in php 8.1)
+     *
      * @return bool|Pdu
+     *
      * @throws Exception
      */
     protected function bind(string $login, string $pass, int $commandID): Pdu|bool
     {
         // Make PDU body
         $pduBody = pack(
-            'a' . (strlen($login) + 1) .
-            'a' . (strlen($pass) + 1) .
-            'a' . (strlen(self::$systemType) + 1) .
-            'CCCa' . (strlen(self::$addressRange) + 1),
-            $login, $pass,
+            'a' . (strlen($login) + 1)
+            . 'a' . (strlen($pass) + 1)
+            . 'a' . (strlen(self::$systemType) + 1)
+            . 'CCCa' . (strlen(self::$addressRange) + 1),
+            $login,
+            $pass,
             self::$systemType,
             self::$interfaceVersion,
             self::$addrTon,
@@ -669,7 +671,7 @@ class Client
     {
         // Check command id
         if ($pdu->id != Smpp::DELIVER_SM) {
-            throw new InvalidArgumentException('PDU is not an received SMS');
+            throw new SmppInvalidArgumentException('PDU is not an received SMS');
         }
 
         // Unpack PDU
@@ -818,7 +820,7 @@ class Client
             self::MODE_TRANSMITTER => $this->bindTransmitter($this->login, $this->pass),
             self::MODE_RECEIVER => $this->bindReceiver($this->login, $this->pass),
             self::MODE_TRANSCEIVER => $this->bindTransceiver($this->login, $this->pass),
-            default => throw new Exception('Invalid mode: ' . $this->mode)
+            default => throw new SmppException('Invalid mode: ' . $this->mode)
         };
     }
 
@@ -958,7 +960,7 @@ class Client
         $bodyLength = $length - 16;
         if ($bodyLength > 0) {
             if (!$body = $this->transport->readAll($bodyLength)) {
-                throw new RuntimeException('Could not read PDU body');
+                throw new SmppException('Could not read PDU body');
             }
         } else {
             $body = null;
@@ -1027,7 +1029,7 @@ class Client
         );
 
         if (!$unpackedData) {
-            throw new InvalidArgumentException('Could not read tag data');
+            throw new SmppInvalidArgumentException('Could not read tag data');
         }
         /**
          * Extraction create variables:

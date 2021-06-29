@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace smpp;
 
-use Exception;
-use InvalidArgumentException;
 use smpp\exceptions\SmppInvalidArgumentException;
 
 /**
@@ -81,7 +79,7 @@ class Tag
 
     /**
      * Get the TLV packed into a binary string for transport
-     * 
+     *
      * @return string
      */
     public function getBinary(): string
