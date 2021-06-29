@@ -177,8 +177,6 @@ class Client
      * @param string $pass - ESME password
      *
      * @return void
-     *
-     * @throws Exception
      */
     public function bindTransmitter(string $login, string $pass): void
     {
@@ -205,8 +203,6 @@ class Client
      * @param string $pass - ESME password
      *
      * @return void
-     *
-     * @throws Exception
      */
     public function bindTransceiver(string $login, string $pass): void
     {
@@ -229,7 +225,6 @@ class Client
      * Closes the session on the SMSC server.
      *
      * @return void
-     * @throws Exception
      */
     public function close(): void
     {
@@ -247,11 +242,13 @@ class Client
     }
 
     /**
-     * Parse a timestring as formatted by SMPP v3.4 section 7.1.
+     * Parse a time string as formatted by SMPP v3.4 section 7.1.
      * Returns an object of either DateTime or DateInterval is returned.
      *
      * @param string $input
+     *
      * @return DateTime|DateInterval|null
+     *
      * @throws Exception
      */
     public function parseSmppTime(string $input): null|DateTime|DateInterval
@@ -289,7 +286,9 @@ class Client
      *
      * @param string $messageID
      * @param Address $source
+     *
      * @return null|array
+     *
      * @throws Exception
      */
     public function queryStatus(string $messageID, Address $source): null|array
@@ -375,7 +374,9 @@ class Client
      * @param int $priority (optional)
      * @param null $scheduleDeliveryTime (optional)
      * @param null $validityPeriod (optional)
+     *
      * @return bool|string message id
+     *
      * @throws Exception
      */
     public function sendSMS(
@@ -635,7 +636,6 @@ class Client
      *
      * @return bool|Pdu
      *
-     * @throws Exception
      */
     protected function bind(string $login, string $pass, int $commandID): Pdu|bool
     {
@@ -807,7 +807,7 @@ class Client
      * Reconnect to SMSC.
      * This is mostly to deal with the situation were we run out of sequence numbers
      *
-     * @throws Exception
+     * @throws SmppException|Exception
      */
     protected function reconnect(): void
     {
@@ -829,6 +829,7 @@ class Client
      * @param int $id - command ID
      * @param string $pduBody - PDU body
      * @return Pdu
+     *
      * @throws Exception
      */
     protected function sendCommand(int $id, string $pduBody): Pdu

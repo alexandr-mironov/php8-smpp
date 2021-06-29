@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace smpp;
 
-
 use ArrayIterator;
-use Exception;
 use IteratorIterator;
+use smpp\exceptions\InvalidCollectionItem;
 
 /**
  * Class Collection
@@ -25,9 +24,11 @@ class Collection extends IteratorIterator
 
     /**
      * Collection constructor.
+     *
      * @param bool $strict in strict mode on invalid collection item will be thrown an Exception
      * @param ItemInterface ...$items
-     * @throws Exception
+     *
+     * @throws InvalidCollectionItem
      */
     public function __construct(
         public bool $strict = false,
@@ -40,8 +41,10 @@ class Collection extends IteratorIterator
 
     /**
      * Add item to collection
+     *
      * @param ItemInterface $item
-     * @throws Exception
+     *
+     * @throws InvalidCollectionItem
      */
     public function addItem(ItemInterface $item): void
     {
@@ -49,14 +52,14 @@ class Collection extends IteratorIterator
             $this->items[] = $item;
         } else {
             if ($this->strict) {
-                throw new Exception('Invalid item of collection');
+                throw new InvalidCollectionItem('Invalid item of collection');
             }
         }
     }
 
     /**
      * @param ItemInterface[] $items
-     * @throws Exception
+     * @throws InvalidCollectionItem
      */
     public function addItems(array $items): void
     {
