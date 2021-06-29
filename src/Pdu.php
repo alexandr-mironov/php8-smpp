@@ -1,13 +1,11 @@
 <?php
 
-/**
- * Primitive class for encapsulating PDUs
- * @author hd@onlinecity.dk
- */
+declare(strict_types=1);
+
 namespace smpp;
 
 /**
- * Class Pdu
+ * Primitive class for encapsulating PDUs
  * @package smpp
  */
 class Pdu
@@ -21,10 +19,11 @@ class Pdu
      * @param string $body
      */
     public function __construct(
-        public int      $id,
-        public int      $status,
-        public int      $sequence,
-        public string   $body
+        public int $id,
+        public int $status,
+        public int $sequence,
+        public string $body
     )
-    {}
+    {
+    }
 }

@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
 
 namespace smpp;
 
 /**
- * Primitive type to represent SMSes
- * @author hd@onlinecity.dk
+ * Class Sms
+ * @package smpp
  */
 class Sms extends Pdu
 {

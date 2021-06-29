@@ -444,10 +444,10 @@ class Socket
      * Read all the bytes, and block until they are read.
      * Timeout throws SocketTransportException
      *
-     * @param integer $length
+     * @param int $length
      * @return string
      */
-    public function readAll($length): string
+    public function readAll(int $length): string
     {
         $d = "";
         $r = 0;
