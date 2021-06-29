@@ -152,6 +152,7 @@ class Client
      *
      * @throws SmppException
      * @throws ClosedTransportException
+     * @throws Exception
      */
     public function bindReceiver(string $login, string $pass): void
     {
@@ -177,6 +178,7 @@ class Client
      * @param string $pass - ESME password
      *
      * @return void
+     * @throws Exception
      */
     public function bindTransmitter(string $login, string $pass): void
     {
@@ -203,6 +205,7 @@ class Client
      * @param string $pass - ESME password
      *
      * @return void
+     * @throws Exception
      */
     public function bindTransceiver(string $login, string $pass): void
     {
@@ -225,6 +228,7 @@ class Client
      * Closes the session on the SMSC server.
      *
      * @return void
+     * @throws Exception
      */
     public function close(): void
     {
@@ -261,13 +265,27 @@ class Client
 
         if ($p == 'R') {
             $spec = "P";
-            if ($y) $spec .= $y . 'Y';
-            if ($m) $spec .= $m . 'M';
-            if ($d) $spec .= $d . 'D';
-            if ($h || $i || $s) $spec .= 'T';
-            if ($h) $spec .= $h . 'H';
-            if ($i) $spec .= $i . 'M';
-            if ($s) $spec .= $s . 'S';
+            if ($y) {
+                $spec .= $y . 'Y';
+            }
+            if ($m) {
+                $spec .= $m . 'M';
+            }
+            if ($d) {
+                $spec .= $d . 'D';
+            }
+            if ($h || $i || $s) {
+                $spec .= 'T';
+            }
+            if ($h) {
+                $spec .= $h . 'H';
+            }
+            if ($i) {
+                $spec .= $i . 'M';
+            }
+            if ($s) {
+                $spec .= $s . 'S';
+            }
             return new DateInterval($spec);
         } else {
             $offsetHours = floor($n / 4);
@@ -636,6 +654,7 @@ class Client
      *
      * @return bool|Pdu
      *
+     * @throws Exception
      */
     protected function bind(string $login, string $pass, int $commandID): Pdu|bool
     {
