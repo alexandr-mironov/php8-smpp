@@ -410,11 +410,7 @@ class Socket
             );
         }
 
-        if (!empty($r)) {
-            return true;
-        }
-
-        return false;
+        return !empty($r);
     }
 
     /**
@@ -424,10 +420,10 @@ class Socket
      * Returns false on timeout (technically EAGAIN error).
      * Throws SocketTransportException if data could not be read.
      *
-     * @param integer $length
+     * @param int $length
      * @return false|string
      */
-    public function read($length): false|string
+    public function read(int $length): false|string
     {
         $d = socket_read($this->socket, $length, PHP_BINARY_READ);
         // sockets give EAGAIN on timeout
@@ -440,11 +436,8 @@ class Socket
                 socket_last_error()
             );
         }
-        if ($d === '') {
-            return false;
-        }
 
-        return $d;
+        return $d ?: false;
     }
 
     /**

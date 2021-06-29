@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 namespace smpp;
 
@@ -105,7 +106,7 @@ class Client
     public static bool $smsNullTerminateOctetstrings = false;
 
     /** @var int */
-    public static $csmsMethod = self::CSMS_16BIT_TAGS;
+    public static int $csmsMethod = self::CSMS_16BIT_TAGS;
 
     /** @var array */
     protected array $pduQueue = [];
