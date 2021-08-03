@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace smpp\transport;
 
 use JetBrains\PhpStorm\ArrayShape;
-use smpp\Collection;
 use smpp\exceptions\SocketTransportException;
 use smpp\HostCollection;
 use Socket as SocketClass;
@@ -55,7 +54,7 @@ class Socket
     /** @var bool */
     public static bool $randomHost = false;
 
-    /** @var HostCollection  */
+    /** @var HostCollection */
     protected HostCollection $hostCollection;
 
     /**
@@ -67,10 +66,10 @@ class Socket
      * @param ?callable $debugHandler callback for debug info
      */
     public function __construct(
-        array $hosts,
+        array            $hosts,
         array|int|string $ports,
-        protected bool $persist = false,
-        ?callable $debugHandler = null
+        protected bool   $persist = false,
+        ?callable        $debugHandler = null
     )
     {
         $this->debug = self::$defaultDebug;

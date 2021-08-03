@@ -24,7 +24,7 @@ class GsmEncoderHelper
      * @param string $string
      * @return string
      */
-    public static function utf8_to_gsm0338(string $string): string
+    public static function utf8ToGsm0338(string $string): string
     {
         $dict = [
             '@' => "\x00",
