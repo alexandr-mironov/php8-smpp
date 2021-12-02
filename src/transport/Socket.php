@@ -57,6 +57,9 @@ class Socket
     /** @var HostCollection */
     protected HostCollection $hostCollection;
 
+    /** @var int define MSG_DONTWAIT as class const to prevent bug https://bugs.php.net/bug.php?id=48326  */
+    private const MSG_DONTWAIT = 64;
+
     /**
      * Construct a new socket for this transport to use.
      *
@@ -338,7 +341,7 @@ class Socket
         }
         $it = new \ArrayIterator($this->hosts);
         while ($it->valid()) {
-            list($hostname, $port, $ip6s, $ip4s) = $it->current();
+            [$hostname, $port, $ip6s, $ip4s] = $it->current();
             if (!self::$forceIpv4 && !empty($ip6s)) { // Attempt IPv6s first
                 foreach ($ip6s as $ip) {
                     if ($this->debug) {
@@ -353,7 +356,10 @@ class Socket
                         $this->socket = $socket6;
                         return;
                     } elseif ($this->debug) {
-                        call_user_func($this->debugHandler, "Socket connect to $ip:$port failed; " . socket_strerror(socket_last_error()));
+                        call_user_func(
+                            $this->debugHandler,
+                            "Socket connect to $ip:$port failed; " . socket_strerror(socket_last_error())
+                        );
                     }
                 }
             }
@@ -453,7 +459,7 @@ class Socket
         $readTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_RCVTIMEO);
         while ($r < $length) {
             $buf = '';
-            $r += socket_recv($this->socket, $buf, $length - $r, MSG_DONTWAIT);
+            $r += socket_recv($this->socket, $buf, $length - $r, self::MSG_DONTWAIT);
             if ($r === false) {
                 throw new SocketTransportException(
                     'Could not read ' . $length . ' bytes from socket; ' . socket_strerror(socket_last_error()),
