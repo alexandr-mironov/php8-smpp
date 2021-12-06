@@ -262,11 +262,12 @@ class Socket
      * Check if the socket is constructed, and there are no exceptions on it
      * Returns false if it's closed.
      * Throws SocketTransportException is state could not be ascertained
+     * @return bool
      * @throws SocketTransportException
      */
     public function isOpen(): bool
     {
-        if (!is_resource($this->socket) && !$this->socket instanceof \Socket) {
+        if (!$this->socket instanceof SocketClass) {
             return false;
         }
 
