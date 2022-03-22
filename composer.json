@@ -17,6 +17,7 @@
     "ext-mbstring": "*"
   },
   "require-dev": {
+    "phpstan/phpstan": "1.4.8"
   },
   "autoload": {
     "psr-4": {
