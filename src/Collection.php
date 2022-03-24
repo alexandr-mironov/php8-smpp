@@ -16,10 +16,10 @@ use smpp\exceptions\InvalidCollectionItem;
  */
 class Collection extends IteratorIterator
 {
-    /** @var string class name of items */
+    /** @var class-string class name of items */
     public const CLASSNAME = ItemInterface::class;
 
-    /** @var array */
+    /** @var ItemInterface[] */
     public array $items = [];
 
     /**
@@ -48,7 +48,9 @@ class Collection extends IteratorIterator
      */
     public function addItem(ItemInterface $item): void
     {
-        if ($item instanceof static::CLASSNAME) {
+        /** @var class-string $classname */
+        $classname = static::CLASSNAME;
+        if ($item instanceof $classname) {
             $this->items[] = $item;
         } else {
             if ($this->strict) {

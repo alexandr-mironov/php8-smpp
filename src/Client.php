@@ -107,7 +107,7 @@ class Client
     /** @var int */
     public static int $csmsMethod = self::CSMS_16BIT_TAGS;
 
-    /** @var array */
+    /** @var Pdu[] */
     protected array $pduQueue = [];
 
     // Used for reconnect
@@ -327,7 +327,7 @@ class Client
      * @param string $messageID
      * @param Address $source
      *
-     * @return null|array
+     * @return null|array<string, mixed>
      *
      * @throws Exception
      */
@@ -356,6 +356,11 @@ class Client
         ];
         $data['final_date'] = $data['final_date'] ? $this->parseSmppTime(trim($data['final_date'])) : null;
         $status = unpack("cmessage_state/cerror_code", substr($reply->body, $posDate + 1));
+
+        if (!$status) {
+            // todo: add exception here
+        }
+
         return array_merge($data, $status);
     }
 
@@ -367,12 +372,11 @@ class Client
      */
     public function readSMS(): bool|DeliveryReceipt|Sms
     {
-        $commandID = Smpp::DELIVER_SM;
         // Check the queue
         $queueLength = count($this->pduQueue);
         for ($i = 0; $i < $queueLength; $i++) {
             $pdu = $this->pduQueue[$i];
-            if ($pdu->id == $commandID) {
+            if ($pdu->id === Smpp::DELIVER_SM) {
                 //remove response
                 array_splice($this->pduQueue, $i, 1);
                 return $this->parseSMS($pdu);
@@ -385,13 +389,13 @@ class Client
                 return false;
             } // TSocket v. 0.6.0+ returns false on timeout
             //check for enquire link command
-            if ($pdu->id == Smpp::ENQUIRE_LINK) {
+            if ($pdu->id === Smpp::ENQUIRE_LINK) {
                 $response = new Pdu(Smpp::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
                 $this->sendPDU($response);
-            } else if ($pdu->id != $commandID) { // if this is not the correct PDU add to queue
+            } else if ($pdu->id !== Smpp::DELIVER_SM) { // if this is not the correct PDU add to queue
                 array_push($this->pduQueue, $pdu);
             }
-        } while ($pdu && $pdu->id != $commandID);
+        } while ($pdu && $pdu->id !== Smpp::DELIVER_SM);
 
         if ($pdu) {
             return $this->parseSMS($pdu);
@@ -674,11 +678,11 @@ class Client
      * @param string $pass
      * @param int $commandID (todo replace to ENUM in php 8.1)
      *
-     * @return bool|Pdu
+     * @return Pdu
      *
      * @throws Exception
      */
-    protected function bind(string $login, string $pass, int $commandID): Pdu|bool
+    protected function bind(string $login, string $pass, int $commandID): Pdu
     {
         // Make PDU body
         $pduBody = pack(
@@ -969,9 +973,9 @@ class Client
 
     /**
      * Reads incoming PDU from SMSC.
-     * @return bool|Pdu
+     * @return false|Pdu
      */
-    protected function readPDU(): Pdu|bool
+    protected function readPDU(): Pdu|false
     {
         // Read PDU length
         $bufLength = $this->transport->read(4);
@@ -992,11 +996,11 @@ class Client
         }
 
         /**
-         * @var $commandID
-         * @var $commandStatus
-         * @var $sequenceNumber
+         * @var $command_id
+         * @var $command_status
+         * @var $sequence_number
          */
-        extract(unpack("NcommandID/NcommandStatus/NsequenceNumber", $bufHeaders));
+        extract(unpack("Ncommand_id/Ncommand_status/Nsequence_number", $bufHeaders));
 
         // Read PDU body
         $bodyLength = $length - 16;
@@ -1010,11 +1014,11 @@ class Client
 
         $this->logger->info("Read PDU         : $length bytes");
         $this->logger->info(' ' . chunk_split(bin2hex($bufLength . $bufHeaders . $body), 2, " "));
-        $this->logger->info(" command id      : 0x" . dechex($commandID));
-        $this->logger->info(" command status  : 0x" . dechex($commandStatus) . " " . Smpp::getStatusMessage($commandStatus));
-        $this->logger->info(' sequence number : ' . $sequenceNumber);
+        $this->logger->info(" command id      : 0x" . dechex($command_id));
+        $this->logger->info(" command status  : 0x" . dechex($command_status) . " " . Smpp::getStatusMessage($command_status));
+        $this->logger->info(' sequence number : ' . $sequence_number);
 
-        return new Pdu($commandID, $commandStatus, $sequenceNumber, $body);
+        return new Pdu($command_id, $command_status, $sequence_number, $body);
     }
 
     /**

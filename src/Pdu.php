@@ -19,9 +19,9 @@ class Pdu
      * @param string $body
      */
     public function __construct(
-        public int    $id,
-        public int    $status,
-        public int    $sequence,
+        public int $id,
+        public int $status,
+        public int $sequence,
         public string $body
     )
     {

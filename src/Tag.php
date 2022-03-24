@@ -70,9 +70,9 @@ class Tag
      * @param string $type (optional)
      */
     public function __construct(
-        public int    $id,
+        public int $id,
         public string $value,
-        public ?int   $length = null,
+        public ?int $length = null,
         public string $type = 'a*'
     )
     {
