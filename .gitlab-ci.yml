@@ -3,7 +3,7 @@ stages:
 
 phpstan:
   stage: test
-  image: localhost:5000/php:8-fpm
+  image: localhost:5000/php8
   before_script:
     - curl -s https://getcomposer.org/installer | php -- --filename=composer.phar
     - php composer.phar i
