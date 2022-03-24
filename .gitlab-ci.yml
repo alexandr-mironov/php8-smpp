@@ -7,10 +7,11 @@ phpstan:
   before_script:
     - curl -s https://getcomposer.org/installer | php -- --filename=composer.phar
     - php composer.phar i
-  script: # -c phpstan.neon.dist
-    - php vendor/phpstan/phpstan/phpstan analyse --memory-limit 1024M --no-progress --error-format=junit > phpstan-report.xml
+    - php composer.phar dump
+  script:
+    - php vendor/phpstan/phpstan/phpstan analyse --memory-limit 1024M -c phpstan.neon.dist --no-progress --error-format=junit > phpstan-report.xml
   after_script:
-    - php vendor/phpstan/phpstan/phpstan analyse --memory-limit 1024M --no-progress
+    - php vendor/phpstan/phpstan/phpstan analyse --memory-limit 1024M -c phpstan.neon.dist --no-progress
   artifacts:
     when: always
     reports:
