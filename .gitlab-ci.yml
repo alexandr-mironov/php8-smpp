@@ -3,10 +3,10 @@ stages:
 
 phpstan:
   stage: test
-  image: php:8-fpm
+  image: localhost:5000/php:8-fpm
   before_script:
     - curl -s https://getcomposer.org/installer | php -- --filename=composer.phar
-    - php composer.phar i --ignore-platform-req=ext-sockets
+    - php composer.phar i
   script:
     - php vendor/phpstan/phpstan/phpstan analyse --memory-limit 1024M -c phpstan.neon.dist --no-progress --error-format=junit > phpstan-report.xml
   after_script:
