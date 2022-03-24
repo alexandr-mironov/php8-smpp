@@ -27,7 +27,7 @@ class Socket
      */
     protected SocketClass $socket;
 
-    /** @var */
+    /** @var array[] */
     protected $hosts;
 
     /** @var callable|string */

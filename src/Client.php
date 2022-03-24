@@ -1065,9 +1065,9 @@ class Client
 
     /**
      * @param array $ar
-     * @return bool|Tag
+     * @return false|Tag
      */
-    protected function parseTag(array &$ar): bool|Tag
+    protected function parseTag(array &$ar): false|Tag
     {
         $unpackedData = unpack(
             'nid/nlength',

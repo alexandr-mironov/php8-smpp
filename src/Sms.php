@@ -26,7 +26,7 @@ class Sms extends Pdu
      * @param integer $registeredDelivery
      * @param integer $dataCoding
      * @param string $message
-     * @param array $tags (optional)
+     * @param Tag[] $tags (optional)
      * @param string|null $scheduleDeliveryTime (optional)
      * @param string|null $validityPeriod (optional)
      * @param int|null $smDefaultMsgId (optional)
