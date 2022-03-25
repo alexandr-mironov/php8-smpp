@@ -350,11 +350,17 @@ class Client
         // Parse reply
         $posID = strpos($reply->body, "\0", 0);
         $posDate = strpos($reply->body, "\0", $posID + 1);
+
+        if ($posID === false) {
+            // todo: throw exceptions here
+        }
+
         $data = [
             'message_id' => substr($reply->body, 0, $posID),
-            'final_date' => substr($reply->body, $posID, $posDate - $posID),
+            'final_date' => substr($reply->body, $posID, (int)$posDate - $posID),
         ];
         $data['final_date'] = $data['final_date'] ? $this->parseSmppTime(trim($data['final_date'])) : null;
+        /** @var false|array{message_state: mixed, error_code: mixed} $status */
         $status = unpack("cmessage_state/cerror_code", substr($reply->body, $posDate + 1));
 
         if (!$status) {
@@ -366,7 +372,7 @@ class Client
 
     /**
      * Read one SMS from SMSC. Can be executed only after bindReceiver() call.
-     * This method bloks. Method returns on socket timeout or enquire_link signal from SMSC.
+     * This method blocks. Method returns on socket timeout or enquire_link signal from SMSC.
      *
      * @return DeliveryReceipt|Sms|bool
      */
@@ -413,7 +419,7 @@ class Client
      * @param Address $from
      * @param Address $to
      * @param string $message
-     * @param null $tags (optional)
+     * @param array|null $tags (optional)
      * @param int $dataCoding (optional)
      * @param int $priority (optional)
      * @param null $scheduleDeliveryTime (optional)
@@ -427,7 +433,7 @@ class Client
         Address $from,
         Address $to,
         string $message,
-        $tags = null,
+        array $tags = null,
         int $dataCoding = Smpp::DATA_CODING_DEFAULT,
         int $priority = 0x00,
         $scheduleDeliveryTime = null,
