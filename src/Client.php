@@ -344,7 +344,7 @@ class Client
 
         $reply = $this->sendCommand(Smpp::QUERY_SM, $pduBody);
 
-        if (!$reply || $reply->status != Smpp::ESME_ROK) {
+        if ($reply->status !== Smpp::ESME_ROK) {
             return null;
         }
 
@@ -353,7 +353,8 @@ class Client
         $posDate = strpos($reply->body, "\0", $posID + 1);
 
         if ($posID === false) {
-            // todo: throw exceptions here
+            // todo: replace exception and add message
+            throw new Exception();
         }
 
         $data = [
@@ -365,7 +366,8 @@ class Client
         $status = unpack("cmessage_state/cerror_code", substr($reply->body, $posDate + 1));
 
         if (!$status) {
-            // todo: add exception here
+            // todo: replace exception and add message
+            throw new Exception();
         }
 
         return array_merge($data, $status);
@@ -402,12 +404,9 @@ class Client
             } else if ($pdu->id !== Smpp::DELIVER_SM) { // if this is not the correct PDU add to queue
                 array_push($this->pduQueue, $pdu);
             }
-        } while ($pdu && $pdu->id !== Smpp::DELIVER_SM);
+        } while ($pdu->id !== Smpp::DELIVER_SM);
 
-        if ($pdu) {
-            return $this->parseSMS($pdu);
-        }
-        return false;
+        return $this->parseSMS($pdu);
     }
 
     /**

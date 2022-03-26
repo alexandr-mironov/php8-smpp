@@ -292,7 +292,8 @@ class Socket
     /**
      * Convert a milliseconds into a socket sec+usec array
      * @param integer $millisec
-     * @return array
+     *
+     * @return array{sec: false|float, usec: int}
      */
     #[ArrayShape(['sec' => "false|float", 'usec' => "int"])]
     private function millisecToSolArray(int $millisec): array

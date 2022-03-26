@@ -31,11 +31,22 @@ interface LoggerInterface
     public const INFO = 'info';
     public const DEBUG = 'debug';
 
+    private const LEVEL_LIST = [
+        self::ALERT,
+        self::CRITICAL,
+        self::DEBUG,
+        self::EMERGENCY,
+        self::ERROR,
+        self::INFO,
+        self::NOTICE,
+        self::WARNING,
+    ];
+
     /**
      * System is unusable.
      *
      * @param string $message
-     * @param mixed[] $context
+     * @param array<mixed, mixed> $context
      *
      * @return void
      */
@@ -48,7 +59,7 @@ interface LoggerInterface
      * trigger the SMS alerts and wake you up.
      *
      * @param string $message
-     * @param mixed[] $context
+     * @param array<mixed, mixed> $context
      *
      * @return void
      */
@@ -60,7 +71,7 @@ interface LoggerInterface
      * Example: Application component unavailable, unexpected exception.
      *
      * @param string $message
-     * @param mixed[] $context
+     * @param array<mixed, mixed> $context
      *
      * @return void
      */
@@ -71,7 +82,7 @@ interface LoggerInterface
      * be logged and monitored.
      *
      * @param string $message
-     * @param mixed[] $context
+     * @param array<mixed, mixed> $context
      *
      * @return void
      */
@@ -84,7 +95,7 @@ interface LoggerInterface
      * that are not necessarily wrong.
      *
      * @param string $message
-     * @param mixed[] $context
+     * @param array<mixed, mixed> $context
      *
      * @return void
      */
@@ -94,7 +105,7 @@ interface LoggerInterface
      * Normal but significant events.
      *
      * @param string $message
-     * @param mixed[] $context
+     * @param array<mixed, mixed> $context
      *
      * @return void
      */
@@ -106,7 +117,7 @@ interface LoggerInterface
      * Example: User logs in, SQL logs.
      *
      * @param string $message
-     * @param mixed[] $context
+     * @param array<mixed, mixed> $context
      *
      * @return void
      */
@@ -116,7 +127,7 @@ interface LoggerInterface
      * Detailed debug information.
      *
      * @param string $message
-     * @param mixed[] $context
+     * @param array<mixed, mixed> $context
      *
      * @return void
      */
@@ -125,9 +136,9 @@ interface LoggerInterface
     /**
      * Logs with an arbitrary level.
      *
-     * @param string $level
+     * @param value-of<LoggerInterface::LEVEL_LIST> $level
      * @param string $message
-     * @param array $context
+     * @param array<mixed, mixed> $context
      *
      * @return void
      *
