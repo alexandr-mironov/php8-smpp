@@ -94,7 +94,7 @@ class DefaultLogger implements LoggerInterface
     /**
      * @param string $level
      * @param string $message
-     * @param array $context
+     * @param array<mixed, mixed> $context
      * @return string
      */
     private function buildMessage(string $level, string $message, array $context = []): string

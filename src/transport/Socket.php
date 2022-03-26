@@ -8,6 +8,8 @@ use InvalidArgumentException;
 use JetBrains\PhpStorm\ArrayShape;
 use smpp\exceptions\SocketTransportException;
 use smpp\HostCollection;
+use smpp\LoggerDecorator;
+use smpp\LoggerInterface;
 use Socket as SocketClass;
 
 /**
@@ -27,6 +29,9 @@ class Socket
      * @see https://www.php.net/manual/ru/class.socket.php
      */
     protected SocketClass $socket;
+
+    /** @var array[] */
+    protected array $hosts;
 
     /** @var bool */
     public bool $debug;
@@ -54,6 +59,10 @@ class Socket
 
     /** @var int define MSG_DONTWAIT as class const to prevent bug https://bugs.php.net/bug.php?id=48326 */
     private const MSG_DONTWAIT = 64;
+    /**
+     * @var LoggerDecorator
+     */
+    private LoggerDecorator $logger;
 
     /**
      * Construct a new socket for this transport to use.
@@ -61,17 +70,18 @@ class Socket
      * @param array[] $hosts list of hosts to try.
      * @param mixed $ports list of ports to try, or a single common port
      * @param boolean $persist use persistent sockets
-     * @param ?callable-string $debugHandler callback for debug info
+     * @param LoggerInterface ...$loggers
      */
     public function __construct(
-        protected array $hosts,
+        array $hosts,
         array|int|string $ports,
         protected bool $persist = false,
-        protected ?string $debugHandler = null
+        LoggerInterface ...$loggers
     )
     {
-        $this->debug = self::$defaultDebug;
-        $this->debugHandler = $debugHandler ?? 'error_log';
+        // todo: find better solution to provide debug flag into loggers
+        LoggerDecorator::$debug = self::$defaultDebug;
+        $this->logger = new LoggerDecorator(...$loggers);
 
         // Deal with optional port
         $this->hostCollection = new HostCollection();
@@ -112,8 +122,8 @@ class Socket
                 if (!self::$forceIpv4) {
                     // if not in IPv4 only mode, check the AAAA records first
                     $records = dns_get_record($hostname, DNS_AAAA);
-                    if ($records === false && $this->debug) {
-                        call_user_func($this->debugHandler, 'DNS lookup for AAAA records for: ' . $hostname . ' failed');
+                    if ($records === false) {
+                        $this->logger->error('DNS lookup for AAAA records for: ' . $hostname . ' failed');
                     }
                     if ($records) {
                         foreach ($records as $r) {
@@ -122,15 +132,13 @@ class Socket
                             }
                         }
                     }
-                    if ($this->debug) {
-                        call_user_func($this->debugHandler, "IPv6 addresses for $hostname: " . implode(', ', $ip6s));
-                    }
+                    $this->logger->info("IPv6 addresses for $hostname: " . implode(', ', $ip6s));
                 }
                 if (!self::$forceIpv6) {
                     // if not in IPv6 mode check the A records also
                     $records = dns_get_record($hostname, DNS_A);
-                    if ($records === false && $this->debug) {
-                        call_user_func($this->debugHandler, 'DNS lookup for A records for: ' . $hostname . ' failed');
+                    if ($records === false) {
+                        $this->logger->error('DNS lookup for A records for: ' . $hostname . ' failed');
                     }
                     if ($records) {
                         foreach ($records as $r) {
@@ -144,9 +152,7 @@ class Socket
                     if ($ip != $hostname && !in_array($ip, $ip4s)) {
                         $ip4s[] = $ip;
                     }
-                    if ($this->debug) {
-                        call_user_func($this->debugHandler, "IPv4 addresses for $hostname: " . implode(', ', $ip4s));
-                    }
+                    $this->logger->info("IPv4 addresses for $hostname: " . implode(', ', $ip4s));
                 }
             }
 
@@ -168,12 +174,10 @@ class Socket
             // Add results to pool
             $this->hosts[] = [$hostname, $port, $ip6s, $ip4s];
         }
-        if ($this->debug) {
-            call_user_func(
-                $this->debugHandler,
-                "Built connection pool of " . count($this->hosts) . " host(s) with " . $i . " ip(s) in total"
-            );
-        }
+        $this->logger->info(
+            "Built connection pool of " . count($this->hosts)
+            . " host(s) with " . $i . " ip(s) in total"
+        );
         if (empty($this->hosts)) {
             throw new InvalidArgumentException('No valid hosts was found');
         }
@@ -340,40 +344,35 @@ class Socket
             [$hostname, $port, $ip6s, $ip4s] = $it->current();
             if (!self::$forceIpv4 && !empty($ip6s)) { // Attempt IPv6s first
                 foreach ($ip6s as $ip) {
-                    if ($this->debug) {
-                        call_user_func($this->debugHandler, "Connecting to $ip:$port...");
-                    }
+                    $this->logger->info("Connecting to $ip:$port...");
                     $r = @socket_connect($socket6, $ip, $port);
                     if ($r) {
-                        if ($this->debug) {
-                            call_user_func($this->debugHandler, "Connected to $ip:$port!");
-                        }
+                        $this->logger->info("Connected to $ip:$port!");
                         @socket_close($socket4);
                         $this->socket = $socket6;
                         return;
-                    } elseif ($this->debug) {
-                        call_user_func(
-                            $this->debugHandler,
-                            "Socket connect to $ip:$port failed; " . socket_strerror(socket_last_error())
+                    } else {
+                        $this->logger->error(
+                            "Socket connect to $ip:$port failed; "
+                            . socket_strerror(socket_last_error())
                         );
                     }
                 }
             }
             if (!self::$forceIpv6 && !empty($ip4s)) {
                 foreach ($ip4s as $ip) {
-                    if ($this->debug) {
-                        call_user_func($this->debugHandler, "Connecting to $ip:$port...");
-                    }
+                    $this->logger->info("Connecting to $ip:$port...");
                     $r = @socket_connect($socket4, $ip, $port);
                     if ($r) {
-                        if ($this->debug) {
-                            call_user_func($this->debugHandler, "Connected to $ip:$port!");
-                        }
+                        $this->logger->info("Connected to $ip:$port!");
                         @socket_close($socket6);
                         $this->socket = $socket4;
                         return;
-                    } elseif ($this->debug) {
-                        call_user_func($this->debugHandler, "Socket connect to $ip:$port failed; " . socket_strerror(socket_last_error()));
+                    } else{
+                        $this->logger->error(
+                            "Socket connect to $ip:$port failed; "
+                            . socket_strerror(socket_last_error())
+                        );
                     }
                 }
             }

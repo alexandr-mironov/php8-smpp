@@ -10,6 +10,10 @@ namespace smpp;
  */
 class LoggerDecorator implements LoggerInterface, LoggerAwareInterface
 {
+    public static bool $debug = false;
+
+    public static int $debugLevel = 0;
+
     /**
      * @var LoggerInterface[]
      */
@@ -21,7 +25,7 @@ class LoggerDecorator implements LoggerInterface, LoggerAwareInterface
      */
     public function __construct(LoggerInterface ...$loggers)
     {
-        $this->loggers = $loggers;
+        $this->loggers = ($loggers) ? $loggers : [new DefaultLogger(self::$debug)];
     }
 
     /**

@@ -140,6 +140,7 @@ class Client
         LoggerInterface ...$loggers
     )
     {
+        $this->logger::$debug = $this->transport::$defaultDebug;
         $this->logger = new LoggerDecorator(...$loggers);
     }
 
