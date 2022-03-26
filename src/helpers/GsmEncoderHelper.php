@@ -157,6 +157,7 @@ class GsmEncoderHelper
      * It's about 3 times faster to count than convert and do strlen() if conversion is not required.
      *
      * @param string $utf8String
+     *
      * @return integer
      */
     public static function countGsm0338Length(string $utf8String): int
@@ -171,6 +172,7 @@ class GsmEncoderHelper
      * Returns the packed string in binary format
      *
      * @param string $data
+     *
      * @return string
      */
     public static function pack7bit(string $data): string

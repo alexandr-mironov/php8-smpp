@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace smpp\transport;
 
+use InvalidArgumentException;
 use JetBrains\PhpStorm\ArrayShape;
 use smpp\exceptions\SocketTransportException;
 use smpp\HostCollection;
@@ -27,14 +28,8 @@ class Socket
      */
     protected SocketClass $socket;
 
-    /** @var array[] */
-    protected $hosts;
-
-    /** @var callable|string */
-    protected $debugHandler;
-
     /** @var bool */
-    public $debug;
+    public bool $debug;
 
     /** @var int */
     protected static int $defaultSendTimeout = 100;
@@ -57,22 +52,22 @@ class Socket
     /** @var HostCollection */
     protected HostCollection $hostCollection;
 
-    /** @var int define MSG_DONTWAIT as class const to prevent bug https://bugs.php.net/bug.php?id=48326  */
+    /** @var int define MSG_DONTWAIT as class const to prevent bug https://bugs.php.net/bug.php?id=48326 */
     private const MSG_DONTWAIT = 64;
 
     /**
      * Construct a new socket for this transport to use.
      *
-     * @param array $hosts list of hosts to try.
+     * @param array[] $hosts list of hosts to try.
      * @param mixed $ports list of ports to try, or a single common port
      * @param boolean $persist use persistent sockets
-     * @param ?callable $debugHandler callback for debug info
+     * @param ?callable-string $debugHandler callback for debug info
      */
     public function __construct(
-        array            $hosts,
+        protected array $hosts,
         array|int|string $ports,
-        protected bool   $persist = false,
-        ?callable        $debugHandler = null
+        protected bool $persist = false,
+        protected ?string $debugHandler = null
     )
     {
         $this->debug = self::$defaultDebug;
@@ -98,7 +93,7 @@ class Socket
      * If using DNS hostnames, and all lookups fail, a InvalidArgumentException is thrown.
      *
      * @param array $hosts
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function resolveHosts(array $hosts): void
     {
@@ -180,7 +175,7 @@ class Socket
             );
         }
         if (empty($this->hosts)) {
-            throw new \InvalidArgumentException('No valid hosts was found');
+            throw new InvalidArgumentException('No valid hosts was found');
         }
     }
 
@@ -503,7 +498,7 @@ class Socket
      * @param $buffer
      * @param integer $length
      */
-    public function write($buffer, int $length)
+    public function write($buffer, int $length): void
     {
         $r = $length;
         $writeTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_SNDTIMEO);
