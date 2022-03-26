@@ -31,7 +31,7 @@ interface LoggerInterface
     public const INFO = 'info';
     public const DEBUG = 'debug';
 
-    private const LEVEL_LIST = [
+    public const LEVEL_LIST = [
         self::ALERT,
         self::CRITICAL,
         self::DEBUG,
