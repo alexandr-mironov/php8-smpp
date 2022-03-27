@@ -30,7 +30,7 @@ class Socket
      */
     protected SocketClass $socket;
 
-    /** @var array[] */
+    /** @var array<mixed> */
     protected array $hosts;
 
     /** @var bool */
@@ -67,8 +67,8 @@ class Socket
     /**
      * Construct a new socket for this transport to use.
      *
-     * @param array[] $hosts list of hosts to try.
-     * @param mixed $ports list of ports to try, or a single common port
+     * @param string[] $hosts list of hosts to try.
+     * @param string[]|int|string $ports list of ports to try, or a single common port
      * @param boolean $persist use persistent sockets
      * @param LoggerInterface ...$loggers
      */
@@ -102,7 +102,7 @@ class Socket
      * Resolve the hostnames into IPs, and sort them into IPv4 or IPv6 groups.
      * If using DNS hostnames, and all lookups fail, a InvalidArgumentException is thrown.
      *
-     * @param array $hosts
+     * @param array<mixed> $hosts
      * @throws InvalidArgumentException
      */
     protected function resolveHosts(array $hosts): void
@@ -186,8 +186,10 @@ class Socket
     /**
      * Get a reference to the socket.
      * You should use the public functions rather than the socket directly
+     *
+     * @return SocketClass
      */
-    public function getSocket()
+    public function getSocket(): SocketClass
     {
         return $this->socket;
     }
@@ -197,7 +199,8 @@ class Socket
      *
      * @param integer $option
      * @param integer $level
-     * @return array|false|int
+     *
+     * @return array<mixed, mixed>|false|int
      */
     public function getSocketOption(int $option, int $level = SOL_SOCKET): array|false|int
     {
@@ -227,6 +230,7 @@ class Socket
     {
         if (!$this->isOpen()) {
             self::$defaultSendTimeout = $timeout;
+            return false; // todo: check this
         } else {
             return socket_set_option(
                 $this->socket,
@@ -247,6 +251,7 @@ class Socket
     {
         if (!$this->isOpen()) {
             self::$defaultRecvTimeout = $timeout;
+            return false; // todo: check this
         } else {
             return socket_set_option(
                 $this->socket,
@@ -282,6 +287,7 @@ class Socket
         }
 
         // if there is an exception on our socket it's probably dead
+        /** @var array $e */
         if (!empty($e)) {
             return false;
         }
@@ -295,7 +301,6 @@ class Socket
      *
      * @return array{sec: false|float, usec: int}
      */
-    #[ArrayShape(['sec' => "false|float", 'usec' => "int"])]
     private function millisecToSolArray(int $millisec): array
     {
         $usec = $millisec * 1000;
@@ -312,7 +317,7 @@ class Socket
      *
      * @throws SocketTransportException
      */
-    public function open()
+    public function open(): void
     {
         $sendTimeout = $this->millisecToSolArray(self::$defaultSendTimeout);
         $receiveTimeout = $this->millisecToSolArray(self::$defaultRecvTimeout);
