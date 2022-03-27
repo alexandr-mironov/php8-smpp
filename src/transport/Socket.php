@@ -287,7 +287,7 @@ class Socket
         }
 
         // if there is an exception on our socket it's probably dead
-        /** @var array $e */
+        /** @var SocketClass[] $e */
         if (!empty($e)) {
             return false;
         }
@@ -416,6 +416,7 @@ class Socket
             );
         }
 
+        /** @var SocketClass[] $r */
         return !empty($r);
     }
 
