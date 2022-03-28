@@ -458,6 +458,7 @@ class Socket
     {
         $d = "";
         $r = 0;
+        /** @var array{sec: int|float, usec: int} $readTimeout */
         $readTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_RCVTIMEO);
         while ($r < $length) {
             $buf = '';
@@ -485,12 +486,14 @@ class Socket
                     socket_last_error()
                 );
             }
+            /** @var SocketClass[] $e */
             if (!empty($e)) {
                 throw new SocketTransportException(
                     'Socket exception while waiting for data; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
+            /** @var SocketClass[] $r */
             if (empty($r)) {
                 throw new SocketTransportException('Timed out waiting for data on socket');
             }
@@ -507,7 +510,11 @@ class Socket
     public function write($buffer, int $length): void
     {
         $r = $length;
+        /** @var array{sec: int|float, usec: int} $writeTimeout */
         $writeTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_SNDTIMEO);
+        if (!$writeTimeout) {
+            throw new \Exception(); // todo: replace exception, add exception message
+        }
 
         while ($r > 0) {
             $wrote = socket_write($this->socket, $buffer, $r);
@@ -536,12 +543,14 @@ class Socket
                     socket_last_error()
                 );
             }
+            /** @var SocketClass[] $e */
             if (!empty($e)) {
                 throw new SocketTransportException(
                     'Socket exception while waiting to write data; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
+            /** @var SocketClass[] $w */
             if (empty($w)) {
                 throw new SocketTransportException('Timed out waiting to write data on socket');
             }
