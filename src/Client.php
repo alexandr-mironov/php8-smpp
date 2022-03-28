@@ -419,7 +419,7 @@ class Client
      * @param Address $from
      * @param Address $to
      * @param string $message
-     * @param array|null $tags (optional)
+     * @param Tag[]|null $tags (optional)
      * @param int $dataCoding (optional)
      * @param int $priority (optional)
      * @param null $scheduleDeliveryTime (optional)
@@ -484,11 +484,13 @@ class Client
         if ($doCsms) {
             if (self::$csmsMethod == self::CSMS_PAYLOAD) {
                 $payload = new Tag(Tag::MESSAGE_PAYLOAD, $message, $messageLength);
+                // todo: replace array to k=>v storage (Collection??), where key is tag id
+                $tags[] = $payload;
                 return $this->submitShortMessage(
                     $from,
                     $to,
                     null,
-                    (empty($tags) ? [$payload] : array_merge($tags, $payload)),
+                    $tags,
                     $dataCoding,
                     $priority,
                     $scheduleDeliveryTime,
@@ -536,7 +538,7 @@ class Client
      * @param Address $source
      * @param Address $destination
      * @param string|null $shortMessage
-     * @param array|null $tags
+     * @param Tag[]|null $tags
      * @param integer $dataCoding
      * @param integer $priority
      * @param string|null $scheduleDeliveryTime

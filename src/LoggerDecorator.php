@@ -38,7 +38,7 @@ class LoggerDecorator implements LoggerInterface, LoggerAwareInterface
 
     /**
      * @param string $message
-     * @param array $context
+     * @param array<mixed, mixed> $context
      */
     public function emergency(string $message, array $context = []): void
     {
@@ -102,9 +102,9 @@ class LoggerDecorator implements LoggerInterface, LoggerAwareInterface
     }
 
     /**
-     * @param string $level
+     * @param value-of<LoggerInterface::LEVEL_LIST> $level
      * @param string $message
-     * @param array $context
+     * @param array<mixed, mixed> $context
      */
     public function log(string $level, string $message, array $context = []): void
     {

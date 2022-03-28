@@ -16,8 +16,8 @@ class Host implements ItemInterface
      * @param int|null $port
      */
     public function __construct(
-        private string $host,
-        private ?int   $port = null,
+        public string $host,
+        public ?int   $port = null,
     )
     {
     }
