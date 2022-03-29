@@ -499,7 +499,7 @@ class Client
             } else if (self::$csmsMethod == self::CSMS_8BIT_UDH) {
                 $seqnum = 1;
                 foreach ($parts as $part) {
-                    $udh = pack('cccccc', 5, 0, 3, substr($csmsReference, 1, 1), count($parts), $seqnum);
+                    $udh = pack('cccccc', 5, 0, 3, substr((string)$csmsReference, 1, 1), count($parts), $seqnum);
                     $res = $this->submitShortMessage(
                         $from,
                         $to,
@@ -509,7 +509,7 @@ class Client
                         $priority,
                         $scheduleDeliveryTime,
                         $validityPeriod,
-                        (self::$smsEsmClass | 0x40)
+                        (string)(self::$smsEsmClass | 0x40) //todo: check this
                     );
                     $seqnum++;
                 }

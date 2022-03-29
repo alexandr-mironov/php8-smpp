@@ -458,7 +458,7 @@ class Socket
     {
         $d = "";
         $r = 0;
-        /** @var array{sec: int|float, usec: int} $readTimeout */
+        /** @var array{sec: int, usec: int} $readTimeout */
         $readTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_RCVTIMEO);
         while ($r < $length) {
             $buf = '';

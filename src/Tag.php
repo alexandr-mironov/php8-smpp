@@ -65,13 +65,13 @@ class Tag
      * The value must either be pre-packed with pack(), or a valid pack-type must be specified.
      *
      * @param integer $id
-     * @param string $value
+     * @param string|int $value
      * @param integer|null $length (optional)
      * @param string $type (optional)
      */
     public function __construct(
         public int $id,
-        public string $value,
+        public string|int $value,
         public ?int $length = null,
         public string $type = 'a*'
     )
