@@ -837,7 +837,7 @@ class Client
      * otherwise add it to the queue and return.
      *
      */
-    public function respondEnquireLink()
+    public function respondEnquireLink(): void
     {
         // Check the queue first
         $queueLength = count($this->pduQueue);
@@ -885,12 +885,12 @@ class Client
     /**
      * Sends the PDU command to the SMSC and waits for response.
      * @param int $id - command ID
-     * @param string $pduBody - PDU body
+     * @param ?string $pduBody - PDU body
      * @return Pdu
      *
      * @throws Exception
      */
-    protected function sendCommand(int $id, string $pduBody): Pdu
+    protected function sendCommand(int $id, ?string $pduBody): Pdu
     {
         if (!$this->transport->isOpen()) {
             throw new SocketTransportException('Socket is closed');

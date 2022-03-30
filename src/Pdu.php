@@ -16,13 +16,13 @@ class Pdu
      * @param integer $id
      * @param integer $status
      * @param integer $sequence
-     * @param string $body
+     * @param string|null $body
      */
     public function __construct(
         public int $id,
         public int $status,
         public int $sequence,
-        public string $body
+        public ?string $body
     )
     {
     }
