@@ -921,8 +921,9 @@ class Client
     /**
      * Prepares and sends PDU to SMSC.
      * @param Pdu $pdu
+     * @throws Exception
      */
-    protected function sendPDU(Pdu $pdu)
+    protected function sendPDU(Pdu $pdu): void
     {
         $length = strlen($pdu->body) + 16;
         $header = pack("NNNN", $length, $pdu->id, $pdu->status, $pdu->sequence);
@@ -942,10 +943,11 @@ class Client
      *
      * @param int $sequenceNumber - PDU sequence number
      * @param int $commandID - PDU command ID
-     * @return Pdu|bool
+     *
+     * @return Pdu|false
      * @throws SmppException
      */
-    protected function readPduResponse(int $sequenceNumber, int $commandID): Pdu|bool
+    protected function readPduResponse(int $sequenceNumber, int $commandID): Pdu|false
     {
         // Get response cmd id from command ID
         $commandID = $commandID | Smpp::GENERIC_NACK;
@@ -996,11 +998,15 @@ class Client
             return false;
         }
 
+        $extract = unpack("Nlength", $bufLength);
+        if (!$extract) {
+            throw new SmppException('unable to unpack string');
+        }
         /**
          * extraction define next variables:
          * @var $length
          */
-        extract(unpack("Nlength", $bufLength));
+        extract($extract);
 
         // Read PDU headers
         $bufHeaders = $this->transport->read(12);
@@ -1008,12 +1014,16 @@ class Client
             return false;
         }
 
+        $extract = unpack("Ncommand_id/Ncommand_status/Nsequence_number", $bufHeaders);
+        if (!$extract) {
+            throw new SmppException('unable to unpack string');
+        }
         /**
          * @var $command_id
          * @var $command_status
          * @var $sequence_number
          */
-        extract(unpack("Ncommand_id/Ncommand_status/Nsequence_number", $bufHeaders));
+        extract($extract);
 
         // Read PDU body
         $bodyLength = $length - 16;
