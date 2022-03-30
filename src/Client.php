@@ -631,11 +631,16 @@ class Client
      * Uses str_split if at all possible, and will examine all split points for escape chars if it's required.
      *
      * @param string $message
-     * @param integer $split
+     * @param int<1,max> $split
      * @param integer $dataCoding (optional)
-     * @return array
+     *
+     * @return array<int|string>
      */
-    protected function splitMessageString($message, $split, $dataCoding = Smpp::DATA_CODING_DEFAULT): array
+    protected function splitMessageString(
+        string $message,
+        int $split,
+        int $dataCoding = Smpp::DATA_CODING_DEFAULT
+    ): array
     {
         switch ($dataCoding) {
             case Smpp::DATA_CODING_DEFAULT:
