@@ -1113,7 +1113,11 @@ class Client
          * @var $length
          * @var $id
          */
-        extract($unpackedData);
+        $extractedVars = extract($unpackedData);
+
+        if ($extractedVars < 2) {
+            throw new SmppException('Not enough variables was extracted');
+        }
 
         // Sometimes SMSC return an extra null byte at the end
         if ($length == 0 && $id == 0) {
@@ -1126,7 +1130,7 @@ class Client
         $this->logger->info("Parsed tag:");
         $this->logger->info(" id     :0x" . dechex($tag->id));
         $this->logger->info(" length :" . $tag->length);
-        $this->logger->info(" value  :" . chunk_split(bin2hex($tag->value), 2, " "));
+        $this->logger->info(" value  :" . chunk_split(bin2hex((string)$tag->value), 2, " "));
 
         return $tag;
     }
