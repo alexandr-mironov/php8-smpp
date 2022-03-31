@@ -85,7 +85,7 @@ class Tag
      */
     public function getBinary(): string
     {
-        $binary = pack('nn' . $this->type, $this->id, $this->length ?? strlen($this->value), $this->value);
+        $binary = pack('nn' . $this->type, $this->id, $this->length ?? strlen((string)$this->value), $this->value);
         if (!$binary) {
             throw new SmppInvalidArgumentException(
                 'Format string contain errors, please check format: "'

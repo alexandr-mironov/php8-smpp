@@ -496,10 +496,10 @@ class Client
                     $scheduleDeliveryTime,
                     $validityPeriod
                 );
-            } else if (self::$csmsMethod == self::CSMS_8BIT_UDH) {
-                $seqnum = 1;
+            } elseif (self::$csmsMethod == self::CSMS_8BIT_UDH) {
+                $sequenceNumber = 1;
                 foreach ($parts as $part) {
-                    $udh = pack('cccccc', 5, 0, 3, substr((string)$csmsReference, 1, 1), count($parts), $seqnum);
+                    $udh = pack('cccccc', 5, 0, 3, substr((string)$csmsReference, 1, 1), count($parts), $sequenceNumber);
                     $res = $this->submitShortMessage(
                         $from,
                         $to,
@@ -511,17 +511,17 @@ class Client
                         $validityPeriod,
                         (string)(self::$smsEsmClass | 0x40) //todo: check this
                     );
-                    $seqnum++;
+                    $sequenceNumber++;
                 }
                 return $res;
             } else {
-                $sar_msg_ref_num = new Tag(Tag::SAR_MSG_REF_NUM, $csmsReference, 2, 'n');
-                $sar_total_segments = new Tag(Tag::SAR_TOTAL_SEGMENTS, count($parts), 1, 'c');
-                $seqnum = 1;
+                $sarMessageRefNumber = new Tag(Tag::SAR_MSG_REF_NUM, $csmsReference, 2, 'n');
+                $sarTotalSegments = new Tag(Tag::SAR_TOTAL_SEGMENTS, count($parts), 1, 'c');
+                $sequenceNumber = 1;
                 foreach ($parts as $part) {
-                    $sartags = [$sar_msg_ref_num, $sar_total_segments, new Tag(Tag::SAR_SEGMENT_SEQNUM, $seqnum, 1, 'c')];
+                    $sartags = [$sarMessageRefNumber, $sarTotalSegments, new Tag(Tag::SAR_SEGMENT_SEQNUM, $sequenceNumber, 1, 'c')];
                     $res = $this->submitShortMessage($from, $to, $part, (empty($tags) ? $sartags : array_merge($tags, $sartags)), $dataCoding, $priority, $scheduleDeliveryTime, $validityPeriod);
-                    $seqnum++;
+                    $sequenceNumber++;
                 }
                 return $res;
             }
@@ -600,7 +600,11 @@ class Client
         }
 
         $response = $this->sendCommand(Smpp::SUBMIT_SM, $pdu);
+        /** @var array{msgid: string}|false $body */
         $body = unpack("a*msgid", $response->body);
+        if (!$body) {
+            throw new SmppException('unable to unpack response body:' . $response->body);
+        }
         return $body['msgid'];
     }
 
