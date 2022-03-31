@@ -739,6 +739,10 @@ class Client
         // Unpack PDU
         $ar = unpack("C*", $pdu->body);
 
+        if (!$ar) {
+            throw new SmppException(''); // todo: update message
+        }
+
         // Read mandatory params
         $serviceType = $this->getString($ar, 6, true);
 
@@ -1052,7 +1056,7 @@ class Client
      * Reads C style null padded string from the char array.
      * Reads until $maxlen or null byte.
      *
-     * @param array $ar - input array
+     * @param array<mixed> $ar - input array
      * @param integer $maxLength - maximum length to read.
      * @param boolean $firstRead - is this the first bytes read from array?
      * @return string.
@@ -1073,7 +1077,7 @@ class Client
      * Read a specific number of octets from the char array.
      * Does not stop at null byte
      *
-     * @param array $ar - input array
+     * @param array<mixed> $ar - input array
      * @param int $length
      * @return string
      */
@@ -1091,7 +1095,7 @@ class Client
     }
 
     /**
-     * @param array $ar
+     * @param array<mixed> $ar
      * @return false|Tag
      */
     protected function parseTag(array &$ar): false|Tag
