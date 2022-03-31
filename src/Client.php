@@ -1033,6 +1033,10 @@ class Client
          */
         extract($extract);
 
+        if (!isset($command_id, $command_status, $sequence_number)) {
+            return false; // todo: maybe replace to exception??
+        }
+
         // Read PDU body
         $bodyLength = $length - 16;
         if ($bodyLength > 0) {
@@ -1113,14 +1117,10 @@ class Client
          * @var $length
          * @var $id
          */
-        $extractedVars = extract($unpackedData);
-
-        if ($extractedVars < 2) {
-            throw new SmppException('Not enough variables was extracted');
-        }
+        extract($unpackedData);
 
         // Sometimes SMSC return an extra null byte at the end
-        if ($length == 0 && $id == 0) {
+        if (!isset($id, $length) || ($length == 0 && $id == 0)) {
             return false;
         }
 
