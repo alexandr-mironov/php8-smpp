@@ -6,6 +6,7 @@ namespace smpp\transport;
 
 use InvalidArgumentException;
 use JetBrains\PhpStorm\ArrayShape;
+use smpp\exceptions\SmppException;
 use smpp\exceptions\SocketTransportException;
 use smpp\HostCollection;
 use smpp\LoggerDecorator;
@@ -463,7 +464,7 @@ class Socket
         while ($r < $length) {
             $buf = '';
             $r += socket_recv($this->socket, $buf, $length - $r, self::MSG_DONTWAIT);
-            if ($r === false) {
+            if (!$r) {
                 throw new SocketTransportException(
                     'Could not read ' . $length . ' bytes from socket; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
@@ -475,26 +476,26 @@ class Socket
             }
 
             // wait for data to be available, up to timeout
-            $r = [$this->socket];
-            $w = null;
-            $e = [$this->socket];
+            $read = [$this->socket];
+            $write = null;
+            $except = [$this->socket];
 
             // check
-            if (socket_select($r, $w, $e, $readTimeout['sec'], $readTimeout['usec']) === false) {
+            if (socket_select($read, $write, $except, $readTimeout['sec'], $readTimeout['usec']) === false) {
                 throw new SocketTransportException(
                     'Could not examine socket; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
-            /** @var SocketClass[] $e */
-            if (!empty($e)) {
+            /** @var SocketClass[] $except */
+            if (!empty($except)) {
                 throw new SocketTransportException(
                     'Socket exception while waiting for data; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
-            /** @var SocketClass[] $r */
-            if (empty($r)) {
+            /** @var SocketClass[] $read */
+            if (empty($read)) {
                 throw new SocketTransportException('Timed out waiting for data on socket');
             }
         }
@@ -504,16 +505,16 @@ class Socket
      * Write (all) data to the socket.
      * Timeout throws SocketTransportException
      *
-     * @param $buffer
+     * @param string $buffer
      * @param integer $length
      */
-    public function write($buffer, int $length): void
+    public function write(string $buffer, int $length): void
     {
         $r = $length;
         /** @var array{sec: int|float, usec: int} $writeTimeout */
         $writeTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_SNDTIMEO);
         if (!$writeTimeout) {
-            throw new \Exception(); // todo: replace exception, add exception message
+            throw new SmppException(); // todo: replace exception, add exception message
         }
 
         while ($r > 0) {
@@ -532,26 +533,26 @@ class Socket
             $buffer = substr($buffer, $wrote);
 
             // wait for the socket to accept more data, up to timeout
-            $r = null;
-            $w = [$this->socket];
-            $e = [$this->socket];
+            $read = null;
+            $write = [$this->socket];
+            $except = [$this->socket];
 
             // check
-            if (socket_select($r, $w, $e, $writeTimeout['sec'], $writeTimeout['usec']) === false) {
+            if (socket_select($read, $write, $except, $writeTimeout['sec'], $writeTimeout['usec']) === false) {
                 throw new SocketTransportException(
                     'Could not examine socket; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
-            /** @var SocketClass[] $e */
-            if (!empty($e)) {
+            /** @var SocketClass[] $except */
+            if (!empty($except)) {
                 throw new SocketTransportException(
                     'Socket exception while waiting to write data; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
-            /** @var SocketClass[] $w */
-            if (empty($w)) {
+            /** @var SocketClass[] $write */
+            if (empty($write)) {
                 throw new SocketTransportException('Timed out waiting to write data on socket');
             }
         }
