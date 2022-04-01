@@ -13,13 +13,13 @@ use InvalidArgumentException;
 class DeliveryReceipt extends Sms
 {
     public int $id;
-    public $sub;
-    public $dlvrd;
-    public $submitDate;
-    public $doneDate;
-    public $stat;
-    public $err;
-    public $text;
+    public int $sub;
+    public int $dlvrd;
+    public int $submitDate;
+    public int $doneDate;
+    public string $stat;
+    public int $err;
+    public string $text;
 
     /**
      * Parse a delivery receipt formatted as specified in SMPP v3.4 - Appendix B
@@ -55,9 +55,23 @@ class DeliveryReceipt extends Sms
         ] = $matches;
 
         // Convert dates
-        $dp = str_split($this->submitDate, 2);
-        $this->submitDate = gmmktime($dp[3], $dp[4], $dp[5] ?? 0, $dp[1], $dp[2], $dp[0]);
+        $dp = str_split((string)$this->submitDate, 2);
+        $this->submitDate = gmmktime(
+            (int)$dp[3],
+            (int)$dp[4],
+            (int)$dp[5] ?? 0,
+            (int)$dp[1],
+            (int)$dp[2],
+            (int)$dp[0]
+        );
         $dp = str_split($this->doneDate, 2);
-        $this->doneDate = gmmktime($dp[3], $dp[4], $dp[5] ?? 0, $dp[1], $dp[2], $dp[0]);
+        $this->doneDate = gmmktime(
+            (int)$dp[3],
+            (int)$dp[4],
+            (int)$dp[5] ?? 0,
+            (int)$dp[1],
+            (int)$dp[2],
+            (int)$dp[0]
+        );
     }
 }

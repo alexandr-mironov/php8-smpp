@@ -1033,7 +1033,7 @@ class Client
          */
         extract($extract);
 
-        if (!isset($command_id, $command_status, $sequence_number)) {
+        if (!isset($command_id, $command_status, $sequence_number, $length)) {
             return false; // todo: maybe replace to exception??
         }
 
