@@ -463,13 +463,14 @@ class Socket
         $readTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_RCVTIMEO);
         while ($r < $length) {
             $buf = '';
-            $r += socket_recv($this->socket, $buf, $length - $r, self::MSG_DONTWAIT);
-            if (!$r) {
+            $receivedBytes = socket_recv($this->socket, $buf, $length - $r, self::MSG_DONTWAIT);
+            if ($receivedBytes === false) {
                 throw new SocketTransportException(
                     'Could not read ' . $length . ' bytes from socket; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
+            $r += $receivedBytes;
             $d .= $buf;
             if ($r == $length) {
                 return $d;
@@ -511,7 +512,7 @@ class Socket
     public function write(string $buffer, int $length): void
     {
         $r = $length;
-        /** @var array{sec: int|float, usec: int} $writeTimeout */
+        /** @var array{sec: int, usec: int} $writeTimeout */
         $writeTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_SNDTIMEO);
         if (!$writeTimeout) {
             throw new SmppException(); // todo: replace exception, add exception message

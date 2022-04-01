@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace smpp;
 
 use InvalidArgumentException;
+use smpp\exceptions\SmppException;
 
 /**
  * An extension of a SMS, with data embedded into the message part of the SMS.
@@ -47,31 +48,32 @@ class DeliveryReceipt extends Sms
             $this->id,
             $this->sub,
             $this->dlvrd,
-            $this->submitDate,
-            $this->doneDate,
+            $submitDate,
+            $doneDate,
             $this->stat,
             $this->err,
             $this->text
         ] = $matches;
 
-        // Convert dates
-        $dp = str_split((string)$this->submitDate, 2);
-        $this->submitDate = gmmktime(
-            (int)$dp[3],
-            (int)$dp[4],
-            (int)$dp[5] ?? 0,
-            (int)$dp[1],
-            (int)$dp[2],
-            (int)$dp[0]
+        $this->submitDate = $this->convertDate($submitDate);
+        $this->doneDate = $this->convertDate($doneDate);
+    }
+
+    private function convertDate(string $date): int
+    {
+        $dateParts = str_split($date, 2);
+        $timestamp = gmmktime(
+            (int)$dateParts[3],
+            (int)$dateParts[4],
+            (int)$dateParts[5] ?? 0,
+            (int)$dateParts[1],
+            (int)$dateParts[2],
+            (int)$dateParts[0]
         );
-        $dp = str_split($this->doneDate, 2);
-        $this->doneDate = gmmktime(
-            (int)$dp[3],
-            (int)$dp[4],
-            (int)$dp[5] ?? 0,
-            (int)$dp[1],
-            (int)$dp[2],
-            (int)$dp[0]
-        );
+
+        if ($timestamp === false) {
+            throw new SmppException('Invalid date provided');
+        }
+        return $timestamp;
     }
 }
