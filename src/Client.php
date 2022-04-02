@@ -519,8 +519,21 @@ class Client
                 $sarTotalSegments = new Tag(Tag::SAR_TOTAL_SEGMENTS, count($parts), 1, 'c');
                 $sequenceNumber = 1;
                 foreach ($parts as $part) {
-                    $sartags = [$sarMessageRefNumber, $sarTotalSegments, new Tag(Tag::SAR_SEGMENT_SEQNUM, $sequenceNumber, 1, 'c')];
-                    $res = $this->submitShortMessage($from, $to, $part, (empty($tags) ? $sartags : array_merge($tags, $sartags)), $dataCoding, $priority, $scheduleDeliveryTime, $validityPeriod);
+                    $sartags = [
+                        $sarMessageRefNumber,
+                        $sarTotalSegments,
+                        new Tag(Tag::SAR_SEGMENT_SEQNUM, $sequenceNumber, 1, 'c')
+                    ];
+                    $res = $this->submitShortMessage(
+                        $from,
+                        $to,
+                        (string)$part,
+                        (empty($tags) ? $sartags : array_merge($tags, $sartags)),
+                        $dataCoding,
+                        $priority,
+                        $scheduleDeliveryTime,
+                        $validityPeriod
+                    );
                     $sequenceNumber++;
                 }
                 return $res;

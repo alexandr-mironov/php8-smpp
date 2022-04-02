@@ -65,7 +65,7 @@ class DeliveryReceipt extends Sms
         $timestamp = gmmktime(
             (int)$dateParts[3],
             (int)$dateParts[4],
-            (int)$dateParts[5] ?? 0,
+            (int)$dateParts[5],
             (int)$dateParts[1],
             (int)$dateParts[2],
             (int)$dateParts[0]
