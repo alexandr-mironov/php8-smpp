@@ -540,7 +540,7 @@ class Client
             }
         }
 
-        return $this->submitShortMessage($from, $to, $shortMessage, $tags, $dataCoding);
+        return $this->submitShortMessage($from, $to, (string)$shortMessage, $tags, $dataCoding);
     }
 
     /**
@@ -874,7 +874,7 @@ class Client
         // Check the transport for data
         if ($this->transport->hasData()) {
             $pdu = $this->readPDU();
-            if ($pdu->id == Smpp::ENQUIRE_LINK) {
+            if ($pdu && $pdu->id == Smpp::ENQUIRE_LINK) {
                 $this->sendPDU(new Pdu(Smpp::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00"));
             } elseif ($pdu) {
                 array_push($this->pduQueue, $pdu);
