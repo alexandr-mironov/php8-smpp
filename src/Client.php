@@ -140,7 +140,7 @@ class Client
         LoggerInterface ...$loggers
     )
     {
-        $this->logger::$debug = $this->transport::$defaultDebug;
+        LoggerDecorator::$debug = Socket::$defaultDebug;
         $this->logger = new LoggerDecorator(...$loggers);
     }
 
@@ -258,7 +258,13 @@ class Client
      */
     public function parseSmppTime(string $input): null|DateTime|DateInterval
     {
-        if (!preg_match('/^(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{1})(\\d{2})([R+-])$/', $input, $matches)) {
+        if (
+            !preg_match(
+                '/^(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{1})(\\d{2})([R+-])$/',
+                $input,
+                $matches
+            )
+        ) {
             return null;
         }
 
@@ -378,6 +384,7 @@ class Client
      * This method blocks. Method returns on socket timeout or enquire_link signal from SMSC.
      *
      * @return DeliveryReceipt|Sms|bool
+     * @throws Exception
      */
     public function readSMS(): bool|DeliveryReceipt|Sms
     {
@@ -412,7 +419,8 @@ class Client
     /**
      * Send one SMS to SMSC. Can be executed only after bindTransmitter() call.
      * $message is always in octets regardless of the data encoding.
-     * For correct handling of Concatenated SMS, message must be encoded with GSM 03.38 (data_coding 0x00) or UCS-2BE (0x08).
+     * For correct handling of Concatenated SMS,
+     * message must be encoded with GSM 03.38 (data_coding 0x00) or UCS-2BE (0x08).
      * Concatenated SMS'es uses 16-bit reference numbers, which gives 152 GSM 03.38 chars or 66 UCS-2BE chars per CSMS.
      * If we are using 8-bit ref numbers in the UDH for CSMS it's 153 GSM 03.38 chars
      *
@@ -442,7 +450,7 @@ class Client
     {
         $messageLength = strlen($message);
 
-        if ($messageLength > 160 && $dataCoding != Smpp::DATA_CODING_UCS2 && $dataCoding != Smpp::DATA_CODING_DEFAULT) {
+        if ($messageLength > 160 && !in_array($dataCoding, [Smpp::DATA_CODING_UCS2, Smpp::DATA_CODING_DEFAULT])) {
             return false;
         }
 
@@ -499,7 +507,15 @@ class Client
             } elseif (self::$csmsMethod == self::CSMS_8BIT_UDH) {
                 $sequenceNumber = 1;
                 foreach ($parts as $part) {
-                    $udh = pack('cccccc', 5, 0, 3, substr((string)$csmsReference, 1, 1), count($parts), $sequenceNumber);
+                    $udh = pack(
+                        'cccccc',
+                        5,
+                        0,
+                        3,
+                        substr((string)$csmsReference, 1, 1),
+                        count($parts),
+                        $sequenceNumber
+                    );
                     $res = $this->submitShortMessage(
                         $from,
                         $to,
@@ -540,7 +556,7 @@ class Client
             }
         }
 
-        return $this->submitShortMessage($from, $to, (string)$shortMessage, $tags, $dataCoding);
+        return $this->submitShortMessage($from, $to, (string)$shortMessage ?? '', $tags, $dataCoding);
     }
 
     /**
