@@ -556,7 +556,7 @@ class Client
             }
         }
 
-        return $this->submitShortMessage($from, $to, (string)$shortMessage ?? '', $tags, $dataCoding);
+        return $this->submitShortMessage($from, $to, (string)$shortMessage, $tags, $dataCoding);
     }
 
     /**
@@ -711,7 +711,11 @@ class Client
                 }
                 $parts[] = $part;
                 return $parts;
-            case Smpp::DATA_CODING_UCS2: // UCS2-BE can just use str_split since we send 132 octets per message, which gives a fine split using UCS2
+            /**
+             * UCS2-BE can just use str_split since we send 132 octets per message,
+             * which gives a fine split using UCS2
+             */
+            case Smpp::DATA_CODING_UCS2:
             default:
                 return str_split($message, $split);
         }
@@ -756,7 +760,10 @@ class Client
     /**
      * Parse received PDU from SMSC.
      * @param Pdu $pdu - received PDU from SMSC.
+     *
      * @return DeliveryReceipt|Sms parsed PDU as array.
+     *
+     * @throws Exception
      */
     protected function parseSMS(Pdu $pdu): DeliveryReceipt|Sms
     {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace smpp\transport;
 
 use InvalidArgumentException;
-use JetBrains\PhpStorm\ArrayShape;
 use smpp\exceptions\SmppException;
 use smpp\exceptions\SocketTransportException;
 use smpp\HostCollection;
@@ -168,9 +167,7 @@ class Socket
                 continue;
             }
 
-            if ($this->debug) {
-                $i += count($ip4s) + count($ip6s);
-            }
+            $i += count($ip4s) + count($ip6s);
 
             // Add results to pool
             $this->hosts[] = [$hostname, $port, $ip6s, $ip4s];
@@ -375,7 +372,7 @@ class Socket
                         @socket_close($socket6);
                         $this->socket = $socket4;
                         return;
-                    } else{
+                    } else {
                         $this->logger->error(
                             "Socket connect to $ip:$port failed; "
                             . socket_strerror(socket_last_error())
