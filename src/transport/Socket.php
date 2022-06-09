@@ -25,10 +25,10 @@ use Socket as SocketClass;
 class Socket
 {
     /**
-     * @var SocketClass $socket - instance of Socket (since PHP 8)
+     * @var SocketClass|null $socket - instance of Socket (since PHP 8)
      * @see https://www.php.net/manual/ru/class.socket.php
      */
-    protected SocketClass $socket;
+    protected ?SocketClass $socket = null;
 
     /** @var array<mixed> */
     protected array $hosts;
