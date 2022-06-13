@@ -349,10 +349,12 @@ class Socket
             if (!self::$forceIpv4 && !empty($ip6s)) { // Attempt IPv6s first
                 foreach ($ip6s as $ip) {
                     $this->logger->info("Connecting to $ip:$port...");
-                    $r = @socket_connect($socket6, $ip, $port);
-                    if ($r) {
+                    $result = @socket_connect($socket6, $ip, $port);
+                    if ($result) {
                         $this->logger->info("Connected to $ip:$port!");
-                        @socket_close($socket4);
+                        if (isset($socket4) && $socket4 instanceof SocketClass) {
+                            @socket_close($socket4);
+                        }
                         $this->socket = $socket6;
                         return;
                     } else {
@@ -366,10 +368,12 @@ class Socket
             if (!self::$forceIpv6 && !empty($ip4s)) {
                 foreach ($ip4s as $ip) {
                     $this->logger->info("Connecting to $ip:$port...");
-                    $r = @socket_connect($socket4, $ip, $port);
-                    if ($r) {
+                    $result = @socket_connect($socket4, $ip, $port);
+                    if ($result) {
                         $this->logger->info("Connected to $ip:$port!");
-                        @socket_close($socket6);
+                        if (isset($socket6) && $socket6 instanceof SocketClass) {
+                            @socket_close($socket6);
+                        }
                         $this->socket = $socket4;
                         return;
                     } else {
