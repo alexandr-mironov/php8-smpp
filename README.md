@@ -20,23 +20,35 @@ In this case we got ALPHANUMERIC sender value 'github_example':
 ```php
 <?php
 
-namespace your_namespace;
+declare(strict_types=1);
 
-use smpp\{ Address, SMPP, Client as SmppClient, transport\Socket};
+namespace app\components\Sms;
+
+use Exception;
+use smpp\{Address, Client as SmppClient, Smpp, transport\Socket};
 
 class SmsBuilder
 {
-    const DEFAULT_SENDER = 'github_example';
-    protected $transport;
-    protected $smppClient;
-    protected $debug = false;
-    protected $from;
-    protected $to;
-    protected $login;
-    protected $password;
+    /** @var string 11 chars limit */
+    public const DEFAULT_SENDER = 'example';
+
+    protected Socket $transport;
+
+    protected SmppClient $smppClient;
+
+    protected bool $debug = false;
+
+    protected Address $from;
+
+    protected Address $to;
+
+    protected string $login;
+
+    protected string $password;
 
     /**
      * SmsBuilder constructor.
+     *
      * @param string $address SMSC IP
      * @param int $port SMSC port
      * @param string $login
@@ -51,69 +63,76 @@ class SmsBuilder
         string $password,
         int $timeout = 10000,
         bool $debug = false
-    )
-    {
+    ) {
         $this->transport = new Socket([$address], $port);
+        // Activate binary hex-output of server interaction
+        $this->transport->debug = $debug;
         $this->transport->setRecvTimeout($timeout);
         $this->smppClient = new SmppClient($this->transport);
-
-        // Activate binary hex-output of server interaction
-        $this->smppClient->debug = $debug;
-        $this->transport->debug = $debug;
 
         $this->login = $login;
         $this->password = $password;
 
-        $this->from = new Address(self::DEFAULT_SENDER,SMPP::TON_ALPHANUMERIC);
+        $this->from = new Address(self::DEFAULT_SENDER, SMPP::TON_ALPHANUMERIC);
     }
 
     /**
-     * @param $sender
-     * @param $ton
+     * @param string $sender
+     * @param int $ton
+     *
      * @return $this
-     * @throws \Exception
+     * @throws Exception
      */
-    public function setSender($sender, $ton)
+    public function setSender(string $sender, int $ton): SmsBuilder
     {
         return $this->setAddress($sender, 'from', $ton);
     }
 
     /**
-     * @param $address
-     * @param $ton
+     * @param string $address
+     * @param string $type
+     * @param int $ton
+     * @param int $npi
+     *
      * @return $this
-     * @throws \Exception
+     * @throws Exception
      */
-    public function setRecipient($address, $ton)
+    protected function setAddress(
+        string $address,
+        string $type,
+        int $ton = SMPP::TON_UNKNOWN,
+        int $npi = SMPP::NPI_UNKNOWN
+    ): SmsBuilder {
+        // some example of data preparation
+        if ($ton === SMPP::TON_INTERNATIONAL) {
+            $npi = SMPP::NPI_E164;
+        }
+        $this->$type = new Address($address, $ton, $npi);
+
+        return $this;
+    }
+
+    /**
+     * @param string $address
+     * @param int $ton
+     *
+     * @return $this
+     * @throws Exception
+     */
+    public function setRecipient(string $address, int $ton): SmsBuilder
     {
         return $this->setAddress($address, 'to', $ton);
     }
 
     /**
-     * @param $address
-     * @param string $type
-     * @param int $ton
-     * @param int $npi
-     * @return $this
-     * @throws \Exception
-     */
-    protected function setAddress($address, string $type, $ton = SMPP::TON_UNKNOWN, $npi = SMPP::NPI_UNKNOWN)
-    {
-        // some example of data preparation
-        if($ton === SMPP::TON_INTERNATIONAL){
-             $npi = SMPP::NPI_E164;
-        }
-        $this->$type = new Address($address, $ton, $npi);
-        return $this;
-    }
-
-    /**
      * @param string $message
+     *
+     * @throws Exception
      */
-    public function sendMessage(string $message)
+    public function sendMessage(string $message): void
     {
         $this->transport->open();
-        $this->smppClient->bindTransceiver($this->login,$this->password);
+        $this->smppClient->bindTransceiver($this->login, $this->password);
         // strongly recommend use SMPP::DATA_CODING_UCS2 as default encoding in project to prevent problems with non latin symbols
         $this->smppClient->sendSMS($this->from, $this->to, $message, null, SMPP::DATA_CODING_UCS2);
         $this->smppClient->close();
