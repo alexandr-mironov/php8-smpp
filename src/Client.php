@@ -556,7 +556,7 @@ class Client
             }
         }
 
-        return $this->submitShortMessage($from, $to, (string)$shortMessage, $tags, $dataCoding);
+        return $this->submitShortMessage($from, $to, (string)($shortMessage ?? ''), $tags, $dataCoding, $priority);
     }
 
     /**
