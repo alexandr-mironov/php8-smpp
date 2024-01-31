@@ -437,127 +437,63 @@ class Client
      *
      * @throws Exception
      */
-    public function sendSMS(
-        Address $from,
-        Address $to,
-        string $message,
-        array $tags = null,
-        int $dataCoding = Smpp::DATA_CODING_DEFAULT,
-        int $priority = 0x00,
-        $scheduleDeliveryTime = null,
-        $validityPeriod = null
-    ): bool|string
-    {
-        $messageLength = strlen($message);
+public function sendSMS(
+    Address $from,
+    Address $to,
+    string $message,
+    array $tags = null,
+    int $dataCoding = Smpp::DATA_CODING_DEFAULT, // Default to GSM encoding
+    int $priority = 0x03,
+    $scheduleDeliveryTime = null,
+    $validityPeriod = null
+): bool|string {
+    $udhLength = 6; // Typically 6 octets for concatenated SMS
 
-        if ($messageLength > 160 && !in_array($dataCoding, [Smpp::DATA_CODING_UCS2, Smpp::DATA_CODING_DEFAULT])) {
-            return false;
-        }
-
-        switch ($dataCoding) {
-            case Smpp::DATA_CODING_UCS2:
-                // in octets, 70 UCS-2 chars
-                $singleSmsOctetLimit = 140;
-                // There are 133 octets available, but this would split the UCS the middle so use 132 instead
-                $csmsSplit = 132;
-                $message = mb_convert_encoding($message, 'UCS-2');
-                //Update message length with current encoding
-                $messageLength = mb_strlen($message);
-                break;
-            case Smpp::DATA_CODING_DEFAULT:
-                // we send data in octets, but GSM 03.38 will be packed in septets (7-bit) by SMSC.
-                $singleSmsOctetLimit = 160;
-                // send 152/153 chars in each SMS (SMSC will format data)
-                $csmsSplit = (self::$csmsMethod == self::CSMS_8BIT_UDH) ? 153 : 152;
-                break;
-            default:
-                $singleSmsOctetLimit = 254; // From SMPP standard
-                break;
-        }
-
-        // Figure out if we need to do CSMS, since it will affect our PDU
-        if ($messageLength > $singleSmsOctetLimit) {
-            $doCsms = true;
-            if (self::$csmsMethod != self::CSMS_PAYLOAD) {
-                $parts = $this->splitMessageString($message, $csmsSplit, $dataCoding);
-                $shortMessage = reset($parts);
-                $csmsReference = $this->getCsmsReference();
-            }
-        } else {
-            $shortMessage = $message;
-            $doCsms = false;
-        }
-
-        // Deal with CSMS
-        if ($doCsms) {
-            if (self::$csmsMethod == self::CSMS_PAYLOAD) {
-                $payload = new Tag(Tag::MESSAGE_PAYLOAD, $message, $messageLength);
-                // todo: replace array to k=>v storage (Collection??), where key is tag id
-                $tags[] = $payload;
-                return $this->submitShortMessage(
-                    $from,
-                    $to,
-                    null,
-                    $tags,
-                    $dataCoding,
-                    $priority,
-                    $scheduleDeliveryTime,
-                    $validityPeriod
-                );
-            } elseif (self::$csmsMethod == self::CSMS_8BIT_UDH) {
-                $sequenceNumber = 1;
-                foreach ($parts as $part) {
-                    $udh = pack(
-                        'cccccc',
-                        5,
-                        0,
-                        3,
-                        substr((string)$csmsReference, 1, 1),
-                        count($parts),
-                        $sequenceNumber
-                    );
-                    $res = $this->submitShortMessage(
-                        $from,
-                        $to,
-                        $udh . $part,
-                        $tags,
-                        $dataCoding,
-                        $priority,
-                        $scheduleDeliveryTime,
-                        $validityPeriod,
-                        (string)(self::$smsEsmClass | 0x40) //todo: check this
-                    );
-                    $sequenceNumber++;
-                }
-                return $res;
-            } else {
-                $sarMessageRefNumber = new Tag(Tag::SAR_MSG_REF_NUM, $csmsReference, 2, 'n');
-                $sarTotalSegments = new Tag(Tag::SAR_TOTAL_SEGMENTS, count($parts), 1, 'c');
-                $sequenceNumber = 1;
-                foreach ($parts as $part) {
-                    $sartags = [
-                        $sarMessageRefNumber,
-                        $sarTotalSegments,
-                        new Tag(Tag::SAR_SEGMENT_SEQNUM, $sequenceNumber, 1, 'c')
-                    ];
-                    $res = $this->submitShortMessage(
-                        $from,
-                        $to,
-                        (string)$part,
-                        (empty($tags) ? $sartags : array_merge($tags, $sartags)),
-                        $dataCoding,
-                        $priority,
-                        $scheduleDeliveryTime,
-                        $validityPeriod
-                    );
-                    $sequenceNumber++;
-                }
-                return $res;
-            }
-        }
-
-        return $this->submitShortMessage($from, $to, (string)($shortMessage ?? ''), $tags, $dataCoding, $priority);
+    if ($dataCoding == Smpp::DATA_CODING_UCS2) {
+        // Convert the message to UCS-2BE encoding for UCS-2
+        $message = mb_convert_encoding($message, 'UCS-2BE', 'UTF-8');
+        // Calculate the message length in bytes for UCS-2
+        $messageLength = mb_strlen($message, '8bit');
+        $singleSmsOctetLimit = 140; // 70 UCS-2 chars (140 bytes)
+    } else {
+        // Calculate the message length in characters for GSM
+        $messageLength = mb_strlen($message, 'UTF-8');
+        $singleSmsOctetLimit = 160; // 160 GSM chars
     }
+
+    // Check if the message is longer than a single SMS limit
+    $doCsms = $messageLength > $singleSmsOctetLimit;
+    $csmsSplit = $singleSmsOctetLimit - $udhLength; // Adjust for UDH
+
+    if ($doCsms) {
+        // Split the message into parts
+        $parts = $this->splitMessageString($message, $csmsSplit, $dataCoding);
+        $csmsReference = $this->getCsmsReference();
+
+        // Send each part separately
+        $sequenceNumber = 1;
+        foreach ($parts as $part) {
+            $udh = pack('cccccc', 5, 0, 3, substr((string)$csmsReference, 1, 1), count($parts), $sequenceNumber);
+            $res = $this->submitShortMessage(
+                $from,
+                $to,
+                $udh . $part,
+                $tags,
+                $dataCoding,
+                $priority,
+                $scheduleDeliveryTime,
+                $validityPeriod,
+                (string)(self::$smsEsmClass | 0x40) // Check this flag
+            );
+            $sequenceNumber++;
+        }
+        return $res;
+    } else {
+        // Send a single-part message
+        return $this->submitShortMessage($from, $to, $message, $tags, $dataCoding, $priority);
+    }
+}
+
 
     /**
      * Perform the actual submit_sm call to send SMS.
