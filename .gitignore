@@ -1,3 +1,5 @@
 .idea
 .editorconfig
 composer.phar
+composer.lock
+/vendor
