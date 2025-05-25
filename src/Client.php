@@ -1154,6 +1154,7 @@ class Client implements SmppClientInterface
     /**
      * @param array<mixed> $ar
      * @return false|Tag
+     * @throws SmppException
      */
     protected function parseTag(array &$ar): false|Tag
     {
@@ -1163,7 +1164,7 @@ class Client implements SmppClientInterface
         );
 
         if (!$unpackedData) {
-            throw new SmppInvalidArgumentException('Could not read tag data');
+            throw new SmppException('Could not read tag data');
         }
         /**
          * Extraction create variables:

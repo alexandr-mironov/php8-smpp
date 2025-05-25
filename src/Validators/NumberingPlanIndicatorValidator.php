@@ -13,11 +13,15 @@ use Smpp\Smpp;
 
 class NumberingPlanIndicatorValidator implements ValidatorInterface
 {
+    /**
+     * @param int $value
+     * @return SmppException|null
+     */
     public function isValid($value): ?SmppException
     {
         if (
             in_array(
-                (string)$value,
+                $value,
                 [
                     Smpp::NPI_UNKNOWN,
                     Smpp::NPI_E164,

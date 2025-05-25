@@ -1,0 +1,53 @@
+name: PHPStan Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  phpstan:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    env:
+      PHPSTAN_MEMORY_LIMIT: 1G
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 2  # Необходимо для git diff HEAD^ HEAD
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Get changed PHP files
+        id: changed-files
+        run: |
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep -E '\.php$' || true)
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No PHP files changed"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Changed files: $CHANGED_FILES"
+            echo "files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run PHPStan on changed files
+        if: steps.changed-files.outputs.skip != 'true'
+        run: vendor/bin/phpstan analyse --memory-limit=$PHPSTAN_MEMORY_LIMIT --error-format=github ${{ steps.changed-files.outputs.files }}

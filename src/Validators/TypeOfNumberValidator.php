@@ -14,6 +14,10 @@ use Smpp\Smpp;
 class TypeOfNumberValidator implements ValidatorInterface
 {
 
+    /**
+     * @param int $value
+     * @return SmppException|null
+     */
     public function isValid(mixed $value): ?SmppException
     {
         if (
