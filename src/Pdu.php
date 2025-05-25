@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace smpp;
+namespace Smpp;
 
 /**
+ * PDU - is Protocol Data Unit
  * Primitive class for encapsulating PDUs
  * @package smpp
  */

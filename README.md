@@ -4,6 +4,8 @@ SMPP Client (v 3.4) on PHP8
 # ATTENTION!
 ## In development! Not production ready!
 
+SMPP documentation [here](https://smpp.org/SMPP_v3_4_Issue1_2.pdf)
+
 ____
 # readme below from https://github.com/alexandr-mironov/php-smpp 
 
@@ -25,14 +27,14 @@ declare(strict_types=1);
 namespace app\components\Sms;
 
 use Exception;
-use smpp\{Address, Client as SmppClient, Smpp, transport\Socket};
+use Smpp\{Address, Client as SmppClient, Smpp, Transport\SocketTransport};
 
 class SmsBuilder
 {
     /** @var string 11 chars limit */
     public const DEFAULT_SENDER = 'example';
 
-    protected Socket $transport;
+    protected SocketTransport $transport;
 
     protected SmppClient $smppClient;
 
@@ -64,7 +66,7 @@ class SmsBuilder
         int $timeout = 10000,
         bool $debug = false
     ) {
-        $this->transport = new Socket([$address], $port);
+        $this->transport = new SocketTransport([$address], $port);
         // Activate binary hex-output of server interaction
         $this->transport->debug = $debug;
         $this->transport->setRecvTimeout($timeout);
@@ -141,11 +143,12 @@ class SmsBuilder
 ```
 
 This wrapper implement some kind of Builder pattern, usage example:
+
 ```php
 <?php
 // replace address, port, login and password to your values
 (new your_namespace\SmsBuilder('192.168.1.1', '2776', 'your_login', 'your_password', 10000))
-    ->setRecipient('79000000000', \smpp\SMPP::TON_INTERNATIONAL) //msisdn of recipient
+    ->setRecipient('79000000000', \Smpp\SMPP::TON_INTERNATIONAL) //msisdn of recipient
     ->sendMessage('Тестовое сообщение на русском and @noth3r$Ymb0ls');
 ```
 

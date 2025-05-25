@@ -2,16 +2,22 @@
 
 declare(strict_types=1);
 
-namespace smpp;
+namespace Smpp;
 
 use DateInterval;
 use DateTime;
 use Exception;
-use smpp\exceptions\ClosedTransportException;
-use smpp\exceptions\SmppException;
-use smpp\exceptions\SmppInvalidArgumentException;
-use smpp\exceptions\SocketTransportException;
-use smpp\transport\Socket;
+use Psr\Log\NullLogger;
+use Smpp\Contracts\Client\SmppClientInterface;
+use Smpp\Contracts\Middlewares\MiddlewareInterface;
+use Smpp\Contracts\Pdu\PduInterface;
+use Smpp\Contracts\Pdu\PduResponseInterface;
+use Smpp\Exceptions\ClosedTransportException;
+use Smpp\Exceptions\SmppException;
+use Smpp\Exceptions\SmppInvalidArgumentException;
+use Smpp\Exceptions\SocketTransportException;
+use Smpp\Transport\SocketTransport;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class for receiving or sending sms through SMPP protocol.
@@ -36,7 +42,7 @@ use smpp\transport\Socket;
  *
  * This license can be read at: http://www.opensource.org/licenses/lgpl-2.1.php
  */
-class Client
+class Client implements SmppClientInterface
 {
     // Available modes
     /** @var string */
@@ -125,23 +131,30 @@ class Client
 
     /** @var int */
     protected int $sarMessageReferenceNumber;
-
-    /** @var LoggerDecorator */
-    public LoggerDecorator $logger;
+    /**
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
+    /**
+     * @var SmppConfig|null
+     */
+    private ?SmppConfig $config;
 
     /**
      * Construct the SMPP class
      *
-     * @param Socket $transport
-     * @param LoggerInterface ...$loggers
+     * @param SocketTransport $transport
+     * @param SmppConfig|null $config
+     * @param LoggerInterface|null $logger
      */
     public function __construct(
-        public Socket $transport,
-        LoggerInterface ...$loggers
+        public SocketTransport $transport,
+        ?SmppConfig $config = null,
+        ?LoggerInterface $logger = null
     )
     {
-        LoggerDecorator::$debug = Socket::$defaultDebug;
-        $this->logger = new LoggerDecorator(...$loggers);
+        $this->config = ($config === null) ? new SmppConfig() : $config;
+        $this->logger = ($logger === null) ? new NullLogger() : $logger;
     }
 
     /**
@@ -161,11 +174,11 @@ class Client
             throw new ClosedTransportException();
         }
 
-        $this->logger->info('Binding receiver...');
+        $this->logger->debug('Binding receiver...');
 
         $response = $this->bind($login, $pass, Smpp::BIND_RECEIVER);
 
-        $this->logger->info("Binding status  : " . $response->status);
+        $this->logger->debug("Binding status  : " . $response->status);
 
         $this->mode = self::MODE_RECEIVER;
         $this->login = $login;
@@ -187,11 +200,11 @@ class Client
             throw new ClosedTransportException();
         }
 
-        $this->logger->info('Binding transmitter...');
+        $this->logger->debug('Binding transmitter...');
 
         $response = $this->bind($login, $pass, Smpp::BIND_TRANSMITTER);
 
-        $this->logger->info("Binding status  : " . $response->status);
+        $this->logger->debug("Binding status  : " . $response->status);
 
         $this->mode = self::MODE_TRANSMITTER;
         $this->login = $login;
@@ -214,11 +227,11 @@ class Client
             throw new ClosedTransportException();
         }
 
-        $this->logger->info('Binding transciever...');
+        $this->logger->debug('Binding transceiver...');
 
         $response = $this->bind($login, $pass, Smpp::BIND_TRANSCEIVER);
 
-        $this->logger->info("Binding status  : " . $response->status);
+        $this->logger->debug("Binding status  : " . $response->status);
 
         $this->mode = self::MODE_TRANSCEIVER;
         $this->login = $login;
@@ -237,11 +250,11 @@ class Client
             return;
         }
 
-        $this->logger->info('Unbinding...');
+        $this->logger->debug('Unbinding...');
 
         $response = $this->sendCommand(Smpp::UNBIND, "");
 
-        $this->logger->info("Unbind status   : " . $response->status);
+        $this->logger->debug("Unbind status   : " . $response->status);
 
         $this->transport->close();
     }
@@ -343,8 +356,8 @@ class Client
         $pduBody = pack(
             'a' . (strlen($messageID) + 1) . 'cca' . (strlen($source->value) + 1),
             $messageID,
-            $source->ton,
-            $source->npi,
+            $source->numberType,
+            $source->numberingPlanIndicator,
             $source->value
         );
 
@@ -492,7 +505,6 @@ class Client
         if ($doCsms) {
             if (self::$csmsMethod == self::CSMS_PAYLOAD) {
                 $payload = new Tag(Tag::MESSAGE_PAYLOAD, $message, $messageLength);
-                // todo: replace array to k=>v storage (Collection??), where key is tag id
                 $tags[] = $payload;
                 return $this->submitShortMessage(
                     $from,
@@ -602,11 +614,11 @@ class Client
             . 'ccc' . ($scheduleDeliveryTime ? 'a16x' : 'a1') . ($validityPeriod ? 'a16x' : 'a1')
             . 'ccccca' . ($shortMessageLength + (self::$smsNullTerminateOctetstrings ? 1 : 0)),
             self::$smsServiceType,
-            $source->ton,
-            $source->npi,
+            $source->numberType,
+            $source->numberingPlanIndicator,
             $source->value,
-            $destination->ton,
-            $destination->npi,
+            $destination->numberType,
+            $destination->numberingPlanIndicator,
             $destination->value,
             $esmClass,
             self::$smsProtocolID,
@@ -738,15 +750,15 @@ class Client
         $pduBody = pack(
             'a' . (strlen($login) + 1)
             . 'a' . (strlen($pass) + 1)
-            . 'a' . (strlen(self::$systemType) + 1)
-            . 'CCCa' . (strlen(self::$addressRange) + 1),
+            . 'a' . (strlen($this->config->getSystemType()) + 1)
+            . 'CCCa' . (strlen($this->config->getAddressRange()) + 1),
             $login,
             $pass,
-            self::$systemType,
-            self::$interfaceVersion,
-            self::$addrTon,
-            self::$addrNPI,
-            self::$addressRange
+            $this->config->getSystemType(),
+            $this->config->getInterfaceVersion(),
+            $this->config->getAddressNumberType(),
+            $this->config->getAddressNumberingPlanIndicator(),
+            $this->config->getAddressRange()
         );
 
         $response = $this->sendCommand($commandID, $pduBody);
@@ -773,48 +785,51 @@ class Client
         }
 
         // Unpack PDU
-        $ar = unpack("C*", $pdu->body);
+        $unpackedElements = unpack("C*", $pdu->body);
 
-        if (!$ar) {
-            throw new SmppException(''); // todo: update message
+        if (!$unpackedElements) {
+            $this->logger->error("Format not matches with PDU body contents", [
+                'body' => $pdu->body
+            ]);
+            throw new SmppException('Format not matches with PDU body contents');
         }
 
         // Read mandatory params
-        $serviceType = $this->getString($ar, 6, true);
+        $serviceType = $this->getString($unpackedElements, 6, true);
 
         //
-        $sourceAddrTon = next($ar);
-        $sourceAddrNPI = next($ar);
-        $sourceAddr = $this->getString($ar, 21);
-        $source = new Address($sourceAddr, $sourceAddrTon, $sourceAddrNPI);
+        $sourceAddressNumberType = next($unpackedElements);
+        $sourceAddressNumberingPlanIndicator = next($unpackedElements);
+        $sourceAddress = $this->getString($unpackedElements, 21);
+        $source = new Address($sourceAddress, $sourceAddressNumberType, $sourceAddressNumberingPlanIndicator);
 
         //
-        $destinationAddrTon = next($ar);
-        $destinationAddrNPI = next($ar);
-        $destinationAddr = $this->getString($ar, 21);
+        $destinationAddrTon = next($unpackedElements);
+        $destinationAddrNPI = next($unpackedElements);
+        $destinationAddr = $this->getString($unpackedElements, 21);
         $destination = new Address($destinationAddr, $destinationAddrTon, $destinationAddrNPI);
 
-        $esmClass = next($ar);
-        $protocolId = next($ar);
-        $priorityFlag = next($ar);
-        next($ar); // schedule_delivery_time
-        next($ar); // validity_period
-        $registeredDelivery = next($ar);
-        next($ar); // replace_if_present_flag
-        $dataCoding = next($ar);
-        next($ar); // sm_default_msg_id
-        $sm_length = next($ar);
-        $message = $this->getString($ar, $sm_length);
+        $esmClass = next($unpackedElements);
+        $protocolId = next($unpackedElements);
+        $priorityFlag = next($unpackedElements);
+        next($unpackedElements); // schedule_delivery_time
+        next($unpackedElements); // validity_period
+        $registeredDelivery = next($unpackedElements);
+        next($unpackedElements); // replace_if_present_flag
+        $dataCoding = next($unpackedElements);
+        next($unpackedElements); // sm_default_msg_id
+        $sm_length = next($unpackedElements);
+        $message = $this->getString($unpackedElements, $sm_length);
 
         // Check for optional params, and parse them
-        if (current($ar) !== false) {
+        if (current($unpackedElements) !== false) {
             $tags = [];
             do {
-                $tag = $this->parseTag($ar);
+                $tag = $this->parseTag($unpackedElements);
                 if ($tag !== false) {
                     $tags[] = $tag;
                 }
-            } while (current($ar) !== false);
+            } while (current($unpackedElements) !== false);
         } else {
             $tags = null;
         }
@@ -856,9 +871,9 @@ class Client
             );
         }
 
-        $this->logger->info("Received sms:\n" . print_r($sms, true));
+        $this->logger->debug("Received sms:\n" . print_r($sms, true));
 
-        // Send response of recieving sms
+        // Send response of receiving sms
         $response = new Pdu(Smpp::DELIVER_SM_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
         $this->sendPDU($response);
         return $sms;
@@ -972,10 +987,10 @@ class Client
         $length = strlen($pdu->body) + 16;
         $header = pack("NNNN", $length, $pdu->id, $pdu->status, $pdu->sequence);
 
-        $this->logger->info("Read PDU         : $length bytes");
-        $this->logger->info(' ' . chunk_split(bin2hex($header . $pdu->body), 2, " "));
-        $this->logger->info(' command_id      : 0x' . dechex($pdu->id));
-        $this->logger->info(' sequence number : ' . $pdu->sequence);
+        $this->logger->debug("Read PDU         : $length bytes");
+        $this->logger->debug(' ' . chunk_split(bin2hex($header . $pdu->body), 2, " "));
+        $this->logger->debug(' command_id      : 0x' . dechex($pdu->id));
+        $this->logger->debug(' sequence number : ' . $pdu->sequence);
 
         $this->transport->write($header . $pdu->body, $length);
     }
@@ -1083,11 +1098,11 @@ class Client
             $body = null;
         }
 
-        $this->logger->info("Read PDU         : $length bytes");
-        $this->logger->info(' ' . chunk_split(bin2hex($bufLength . $bufHeaders . $body), 2, " "));
-        $this->logger->info(" command id      : 0x" . dechex($command_id));
-        $this->logger->info(" command status  : 0x" . dechex($command_status) . " " . Smpp::getStatusMessage($command_status));
-        $this->logger->info(' sequence number : ' . $sequence_number);
+        $this->logger->debug("Read PDU         : $length bytes");
+        $this->logger->debug(' ' . chunk_split(bin2hex($bufLength . $bufHeaders . $body), 2, " "));
+        $this->logger->debug(" command id      : 0x" . dechex($command_id));
+        $this->logger->debug(" command status  : 0x" . dechex($command_status) . " " . Smpp::getStatusMessage($command_status));
+        $this->logger->debug(' sequence number : ' . $sequence_number);
 
         return new Pdu($command_id, $command_status, $sequence_number, $body);
     }
@@ -1103,14 +1118,16 @@ class Client
      */
     protected function getString(array &$ar, int $maxLength = 255, bool $firstRead = false): string
     {
-        $s = "";
+        $string = "";
         $i = 0;
         do {
-            $c = ($firstRead && $i == 0) ? current($ar) : next($ar);
-            if ($c != 0) $s .= chr($c);
+            $asciiCode = ($firstRead && $i == 0) ? current($ar) : next($ar);
+            if ($asciiCode != 0) {
+                $string .= chr($asciiCode);
+            }
             $i++;
-        } while ($i < $maxLength && $c != 0);
-        return $s;
+        } while ($i < $maxLength && $asciiCode != 0);
+        return $string;
     }
 
     /**
@@ -1123,15 +1140,15 @@ class Client
      */
     protected function getOctets(array &$ar, int $length): string
     {
-        $s = "";
+        $string = "";
         for ($i = 0; $i < $length; $i++) {
-            $c = next($ar);
-            if ($c === false) {
-                return $s;
+            $asciiCode = next($ar);
+            if ($asciiCode === false) {
+                return $string;
             }
-            $s .= chr($c);
+            $string .= chr($asciiCode);
         }
-        return $s;
+        return $string;
     }
 
     /**
@@ -1163,11 +1180,21 @@ class Client
         $value = $this->getOctets($ar, $length);
         $tag = new Tag($id, $value, $length);
 
-        $this->logger->info("Parsed tag:");
-        $this->logger->info(" id     :0x" . dechex($tag->id));
-        $this->logger->info(" length :" . $tag->length);
-        $this->logger->info(" value  :" . chunk_split(bin2hex((string)$tag->value), 2, " "));
+        $this->logger->debug("Parsed tag:");
+        $this->logger->debug(" id     :0x" . dechex($tag->id));
+        $this->logger->debug(" length :" . $tag->length);
+        $this->logger->debug(" value  :" . chunk_split(bin2hex((string)$tag->value), 2, " "));
 
         return $tag;
+    }
+
+    public function send(PduInterface $pdu): PduResponseInterface
+    {
+        // TODO: Implement send() method.
+    }
+
+    public function addMiddleware(MiddlewareInterface $middleware): void
+    {
+        // TODO: Implement addMiddleware() method.
     }
 }

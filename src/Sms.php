@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace smpp;
+namespace Smpp;
 
 /**
  * Class Sms

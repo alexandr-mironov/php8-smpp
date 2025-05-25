@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace smpp\exceptions;
+namespace Smpp\Exceptions;
 
 use RuntimeException;
 

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace smpp\exceptions;
+namespace Smpp\Exceptions;
 
 /**
  * Class ClosedTransportException
- * @package smpp\exceptions
+ * @package smpp\Exceptions
  */
 class ClosedTransportException extends SocketTransportException
 {

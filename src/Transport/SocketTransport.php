@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace smpp\transport;
+namespace Smpp\Transport;
 
+use ArrayIterator;
 use InvalidArgumentException;
-use smpp\exceptions\SmppException;
-use smpp\exceptions\SocketTransportException;
-use smpp\HostCollection;
-use smpp\LoggerDecorator;
-use smpp\LoggerInterface;
+use Psr\Log\LoggerInterface;
+use Smpp\Exceptions\SmppException;
+use Smpp\Exceptions\SocketTransportException;
 use Socket as SocketClass;
 
 /**
@@ -22,7 +21,7 @@ use Socket as SocketClass;
  * Licensed under the MIT license, which can be read at: http://www.opensource.org/licenses/mit-license.php
  * @author hd@onlinecity.dk
  */
-class Socket
+class SocketTransport
 {
     /**
      * @var SocketClass|null $socket - instance of Socket (since PHP 8)
@@ -54,15 +53,8 @@ class Socket
     /** @var bool */
     public static bool $randomHost = false;
 
-    /** @var HostCollection */
-    protected HostCollection $hostCollection;
-
     /** @var int define MSG_DONTWAIT as class const to prevent bug https://bugs.php.net/bug.php?id=48326 */
     private const MSG_DONTWAIT = 64;
-    /**
-     * @var LoggerDecorator
-     */
-    private LoggerDecorator $logger;
 
     /**
      * Construct a new socket for this transport to use.
@@ -70,21 +62,16 @@ class Socket
      * @param string[] $hosts list of hosts to try.
      * @param string[]|int|string $ports list of ports to try, or a single common port
      * @param boolean $persist use persistent sockets
-     * @param LoggerInterface ...$loggers
+     * @param LoggerInterface $logger
      */
     public function __construct(
         array $hosts,
         array|int|string $ports,
         protected bool $persist = false,
-        LoggerInterface ...$loggers
+        private LoggerInterface $logger
     )
     {
-        // todo: find better solution to provide debug flag into loggers
-        LoggerDecorator::$debug = self::$defaultDebug;
-        $this->logger = new LoggerDecorator(...$loggers);
-
         // Deal with optional port
-        $this->hostCollection = new HostCollection();
         $h = [];
         foreach ($hosts as $key => $host) {
             $h[] = [
@@ -132,7 +119,7 @@ class Socket
                             }
                         }
                     }
-                    $this->logger->info("IPv6 addresses for $hostname: " . implode(', ', $ip6s));
+                    $this->logger->debug("IPv6 addresses for $hostname: " . implode(', ', $ip6s));
                 }
                 if (!self::$forceIpv6) {
                     // if not in IPv6 mode check the A records also
@@ -152,7 +139,7 @@ class Socket
                     if ($ip != $hostname && !in_array($ip, $ip4s)) {
                         $ip4s[] = $ip;
                     }
-                    $this->logger->info("IPv4 addresses for $hostname: " . implode(', ', $ip4s));
+                    $this->logger->debug("IPv4 addresses for $hostname: " . implode(', ', $ip4s));
                 }
             }
 
@@ -172,7 +159,7 @@ class Socket
             // Add results to pool
             $this->hosts[] = [$hostname, $port, $ip6s, $ip4s];
         }
-        $this->logger->info(
+        $this->logger->debug(
             "Built connection pool of " . count($this->hosts)
             . " host(s) with " . $i . " ip(s) in total"
         );
@@ -273,11 +260,11 @@ class Socket
             return false;
         }
 
-        $r = null;
-        $w = null;
-        $e = [$this->socket];
+        $readList = null;
+        $writeList = null;
+        $exceptList = [$this->socket];
 
-        if (socket_select($r, $w, $e, 0) === false) {
+        if (socket_select($readList, $writeList, $exceptList, 0) === false) {
             throw new SocketTransportException(
                 'Could not examine socket; ' . socket_strerror(socket_last_error()),
                 socket_last_error()
@@ -285,8 +272,8 @@ class Socket
         }
 
         // if there is an exception on our socket it's probably dead
-        /** @var SocketClass[] $e */
-        if (!empty($e)) {
+        /** @var SocketClass[] $exceptList */
+        if (!empty($exceptList)) {
             return false;
         }
 
@@ -343,7 +330,7 @@ class Socket
             socket_set_option($socket4, SOL_SOCKET, SO_SNDTIMEO, $sendTimeout);
             socket_set_option($socket4, SOL_SOCKET, SO_RCVTIMEO, $receiveTimeout);
         }
-        $it = new \ArrayIterator($this->hosts);
+        $it = new ArrayIterator($this->hosts);
         while ($it->valid()) {
             [$hostname, $port, $ip6s, $ip4s] = $it->current();
             if (!self::$forceIpv4 && !empty($ip6s)) { // Attempt IPv6s first

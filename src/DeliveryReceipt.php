@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace smpp;
+namespace Smpp;
 
 use InvalidArgumentException;
-use smpp\exceptions\SmppException;
+use Smpp\Exceptions\SmppException;
 
 /**
  * An extension of a SMS, with data embedded into the message part of the SMS.

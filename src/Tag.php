@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace smpp;
+namespace Smpp;
 
-use smpp\exceptions\SmppInvalidArgumentException;
+use Smpp\Exceptions\SmppInvalidArgumentException;
 
 /**
  * Primitive class to represent SMPP optional params,
@@ -58,7 +58,6 @@ class Tag
     const ALERT_ON_MESSAGE_DELIVERY = 0x130C;
     const ITS_REPLY_TYPE = 0x1380;
     const ITS_SESSION_INFO = 0x1383;
-
 
     /**
      * Construct a new TLV param.
