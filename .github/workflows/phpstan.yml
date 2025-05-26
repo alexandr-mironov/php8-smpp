@@ -37,4 +37,4 @@ jobs:
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
       - name: Run PHPStan on changed files
-        run: vendor/bin/phpstan analyse --memory-limit=$PHPSTAN_MEMORY_LIMIT --error-format=github --paths-file=$(git diff --name-only origin/main)
+        run: vendor/bin/phpstan analyse --memory-limit=$PHPSTAN_MEMORY_LIMIT --error-format=github $(git diff --name-only origin/main)
