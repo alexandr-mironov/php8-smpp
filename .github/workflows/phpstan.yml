@@ -36,18 +36,5 @@ jobs:
       - name: Install dependencies
         run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-      - name: Get changed PHP files
-        id: changed-files
-        run: |
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep -E '\.php$' || true)
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No PHP files changed"
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "Changed files: $CHANGED_FILES"
-            echo "files=$CHANGED_FILES" >> $GITHUB_OUTPUT
-          fi
-
       - name: Run PHPStan on changed files
-        if: steps.changed-files.outputs.skip != 'true'
-        run: vendor/bin/phpstan analyse --memory-limit=$PHPSTAN_MEMORY_LIMIT --error-format=github ${{ steps.changed-files.outputs.files }}
+        run: vendor/bin/phpstan analyse --memory-limit=$PHPSTAN_MEMORY_LIMIT --error-format=github --paths-file=$(git diff --name-only origin/main)
