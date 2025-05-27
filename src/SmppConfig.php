@@ -14,6 +14,7 @@ use Smpp\Validators\TypeOfNumberValidator;
 
 class SmppConfig
 {
+    // Smpp bind parameters
     /**
      * ESME system type identifier for SMPP bind.
      * For example:
@@ -65,6 +66,7 @@ class SmppConfig
      */
     private string $addressRange = "";
 
+    // ESME transmitter parameters
     /** @var string */
     private string $smsServiceType = "";
     /** @var int */
@@ -80,8 +82,58 @@ class SmppConfig
     /** @var int */
     private int $smsSmDefaultMessageID = 0x00;
 
+    /**
+     * @var int
+     */
+    private int $csmsMethod = Smpp::CSMS_16BIT_TAGS;
+
+    /**
+     * SMPP v3.4 says octet string are "not necessarily NULL terminated".
+     * Switch to toggle this feature
+     * @var boolean
+     *
+     * set NULL terminate octetstrings FALSE as default
+     */
+    private bool $smsNullTerminateOctetstrings = false;
+
     public function __construct()
     {
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSmsNullTerminateOctetstrings(): bool
+    {
+        return $this->smsNullTerminateOctetstrings;
+    }
+
+    /**
+     * @param bool $smsNullTerminateOctetstrings
+     * @return SmppConfig
+     */
+    public function setSmsNullTerminateOctetstrings(bool $smsNullTerminateOctetstrings): SmppConfig
+    {
+        $this->smsNullTerminateOctetstrings = $smsNullTerminateOctetstrings;
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCsmsMethod(): int
+    {
+        return $this->csmsMethod;
+    }
+
+    /**
+     * @param int $csmsMethod
+     * @return SmppConfig
+     */
+    public function setCsmsMethod(int $csmsMethod): SmppConfig
+    {
+        $this->csmsMethod = $csmsMethod;
+        return $this;
     }
 
     /**
@@ -146,7 +198,7 @@ class SmppConfig
      * @param ValidatorInterface ...$validators
      * @throws SmppException
      */
-    private function validate(mixed $value, ValidatorInterface ...$validators)
+    private function validate(mixed $value, ValidatorInterface ...$validators): void
     {
         foreach ($validators as $validator) {
             $validationResult = $validator->isValid($value);

@@ -10,30 +10,6 @@ namespace Smpp;
  */
 class Smpp
 {
-    // Command ids - SMPP v3.4 - 5.1.2.1 page 110-111
-    const GENERIC_NACK          = 0x80000000;
-    const BIND_RECEIVER         = 0x00000001;
-    const BIND_RECEIVER_RESP    = 0x80000001;
-    const BIND_TRANSMITTER      = 0x00000002;
-    const BIND_TRANSMITTER_RESP = 0x80000002;
-    const QUERY_SM              = 0x00000003;
-    const QUERY_SM_RESP         = 0x80000003;
-    const SUBMIT_SM             = 0x00000004;
-    const SUBMIT_SM_RESP        = 0x80000004;
-    const DELIVER_SM            = 0x00000005;
-    const DELIVER_SM_RESP       = 0x80000005;
-    const UNBIND                = 0x00000006;
-    const UNBIND_RESP           = 0x80000006;
-    const REPLACE_SM            = 0x00000007;
-    const REPLACE_SM_RESP       = 0x80000007;
-    const CANCEL_SM             = 0x00000008;
-    const CANCEL_SM_RESP        = 0x80000008;
-    const BIND_TRANSCEIVER      = 0x00000009;
-    const BIND_TRANSCEIVER_RESP = 0x80000009;
-    const OUTBIND               = 0x0000000B;
-    const ENQUIRE_LINK          = 0x00000015;
-    const ENQUIRE_LINK_RESP     = 0x80000015;
-
     //  Command status - SMPP v3.4 - 5.1.3 page 112-114
     const ESME_ROK              = 0x00000000; // No Error
     const ESME_RINVMSGLEN       = 0x00000001; // Message Length is invalid
@@ -163,6 +139,21 @@ class Smpp
     const STATE_ACCEPTED      = 6;
     const STATE_UNKNOWN       = 7;
     const STATE_REJECTED      = 8;
+
+    /**
+     * @var integer Use sar_msg_ref_num and sar_total_segments with 16 bit tags
+     */
+    public const CSMS_16BIT_TAGS = 0;
+
+    /**
+     * @var integer Use message payload for CSMS
+     */
+    public const CSMS_PAYLOAD = 1;
+
+    /**
+     * @var integer Embed a UDH in the message with 8-bit reference.
+     */
+    public const CSMS_8BIT_UDH = 2;
 
     /**
      * @param int $statusCode

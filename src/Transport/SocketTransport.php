@@ -442,10 +442,14 @@ class SocketTransport
      *
      * @param int $length
      * @return string
+     * @throws SmppException
      */
     public function readAll(int $length): string
     {
-        $d = "";
+        if ($this->socket === null) {
+            throw new SmppException('Socket is null'); // todo: replace exception class
+        }
+        $datagram = "";
         $r = 0;
         /** @var array{sec: int, usec: int} $readTimeout */
         $readTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_RCVTIMEO);
@@ -459,9 +463,9 @@ class SocketTransport
                 );
             }
             $r += $receivedBytes;
-            $d .= $buf;
+            $datagram .= $buf;
             if ($r == $length) {
-                return $d;
+                return $datagram;
             }
 
             // wait for data to be available, up to timeout

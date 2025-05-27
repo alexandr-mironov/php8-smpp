@@ -16,6 +16,7 @@ use Smpp\Exceptions\ClosedTransportException;
 use Smpp\Exceptions\SmppException;
 use Smpp\Exceptions\SmppInvalidArgumentException;
 use Smpp\Exceptions\SocketTransportException;
+use Smpp\Protocol\Command;
 use Smpp\Transport\SocketTransport;
 use Psr\Log\LoggerInterface;
 
@@ -46,72 +47,13 @@ class Client implements SmppClientInterface
 {
     // Available modes
     /** @var string */
-    public const MODE_TRANSMITTER = 'transmitter';
+    private const MODE_TRANSMITTER = 'transmitter';
 
     /** @var string */
-    public const MODE_TRANSCEIVER = 'transceiver';
+    private const MODE_TRANSCEIVER = 'transceiver';
 
     /** @var string */
-    public const MODE_RECEIVER = 'receiver';
-
-    /** @var integer Use sar_msg_ref_num and sar_total_segments with 16 bit tags */
-    public const CSMS_16BIT_TAGS = 0;
-
-    /** @var integer Use message payload for CSMS */
-    public const CSMS_PAYLOAD = 1;
-
-    /** @var integer Embed a UDH in the message with 8-bit reference. */
-    public const CSMS_8BIT_UDH = 2;
-
-    // SMPP bind parameters
-    /** @var string */
-    public static string $systemType = "WWW";
-
-    /** @var int */
-    public static int $interfaceVersion = 0x34;
-
-    /** @var int */
-    public static int $addrTon = 0;
-
-    /** @var int */
-    public static int $addrNPI = 0;
-
-    /** @var string */
-    public static string $addressRange = "";
-
-    // ESME transmitter parameters
-    /** @var string */
-    public static string $smsServiceType = "";
-
-    /** @var int */
-    public static int $smsEsmClass = 0x00;
-
-    /** @var int */
-    public static int $smsProtocolID = 0x00;
-
-    /** @var int */
-    public static int $smsPriorityFlag = 0x00;
-
-    /** @var int */
-    public static int $smsRegisteredDeliveryFlag = 0x00;
-
-    /** @var int */
-    public static int $smsReplaceIfPresentFlag = 0x00;
-
-    /** @var int */
-    public static int $smsSmDefaultMessageID = 0x00;
-
-    /**
-     * SMPP v3.4 says octet string are "not necessarily NULL terminated".
-     * Switch to toggle this feature
-     * @var boolean
-     *
-     * set NULL terminate octetstrings FALSE as default
-     */
-    public static bool $smsNullTerminateOctetstrings = false;
-
-    /** @var int */
-    public static int $csmsMethod = self::CSMS_16BIT_TAGS;
+    private const MODE_RECEIVER = 'receiver';
 
     /** @var Pdu[] */
     protected array $pduQueue = [];
@@ -141,7 +83,7 @@ class Client implements SmppClientInterface
     private ?SmppConfig $config;
 
     /**
-     * Construct the SMPP class
+     * Construct the SMPP Client class
      *
      * @param SocketTransport $transport
      * @param SmppConfig|null $config
@@ -164,7 +106,6 @@ class Client implements SmppClientInterface
      *
      * @return void
      *
-     * @throws SmppException
      * @throws ClosedTransportException
      * @throws Exception
      */
@@ -176,7 +117,7 @@ class Client implements SmppClientInterface
 
         $this->logger->debug('Binding receiver...');
 
-        $response = $this->bind($login, $pass, Smpp::BIND_RECEIVER);
+        $response = $this->bind($login, $pass, Command::BIND_RECEIVER);
 
         $this->logger->debug("Binding status  : " . $response->status);
 
@@ -202,7 +143,7 @@ class Client implements SmppClientInterface
 
         $this->logger->debug('Binding transmitter...');
 
-        $response = $this->bind($login, $pass, Smpp::BIND_TRANSMITTER);
+        $response = $this->bind($login, $pass, Command::BIND_TRANSMITTER);
 
         $this->logger->debug("Binding status  : " . $response->status);
 
@@ -229,7 +170,7 @@ class Client implements SmppClientInterface
 
         $this->logger->debug('Binding transceiver...');
 
-        $response = $this->bind($login, $pass, Smpp::BIND_TRANSCEIVER);
+        $response = $this->bind($login, $pass, Command::BIND_TRANSCEIVER);
 
         $this->logger->debug("Binding status  : " . $response->status);
 
@@ -252,7 +193,7 @@ class Client implements SmppClientInterface
 
         $this->logger->debug('Unbinding...');
 
-        $response = $this->sendCommand(Smpp::UNBIND, "");
+        $response = $this->sendCommand(Command::UNBIND, "");
 
         $this->logger->debug("Unbind status   : " . $response->status);
 
@@ -361,7 +302,7 @@ class Client implements SmppClientInterface
             $source->value
         );
 
-        $reply = $this->sendCommand(Smpp::QUERY_SM, $pduBody);
+        $reply = $this->sendCommand(Command::QUERY_SM, $pduBody);
 
         if ($reply->status !== Smpp::ESME_ROK) {
             return null;
@@ -405,7 +346,7 @@ class Client implements SmppClientInterface
         $queueLength = count($this->pduQueue);
         for ($i = 0; $i < $queueLength; $i++) {
             $pdu = $this->pduQueue[$i];
-            if ($pdu->id === Smpp::DELIVER_SM) {
+            if ($pdu->id === Command::DELIVER_SM) {
                 //remove response
                 array_splice($this->pduQueue, $i, 1);
                 return $this->parseSMS($pdu);
@@ -418,13 +359,13 @@ class Client implements SmppClientInterface
                 return false;
             } // TSocket v. 0.6.0+ returns false on timeout
             //check for enquire link command
-            if ($pdu->id === Smpp::ENQUIRE_LINK) {
-                $response = new Pdu(Smpp::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
+            if ($pdu->id === Command::ENQUIRE_LINK) {
+                $response = new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
                 $this->sendPDU($response);
-            } else if ($pdu->id !== Smpp::DELIVER_SM) { // if this is not the correct PDU add to queue
+            } else if ($pdu->id !== Command::DELIVER_SM) { // if this is not the correct PDU add to queue
                 array_push($this->pduQueue, $pdu);
             }
-        } while ($pdu->id !== Smpp::DELIVER_SM);
+        } while ($pdu->id !== Command::DELIVER_SM);
 
         return $this->parseSMS($pdu);
     }
@@ -481,7 +422,7 @@ class Client implements SmppClientInterface
                 // we send data in octets, but GSM 03.38 will be packed in septets (7-bit) by SMSC.
                 $singleSmsOctetLimit = 160;
                 // send 152/153 chars in each SMS (SMSC will format data)
-                $csmsSplit = (self::$csmsMethod == self::CSMS_8BIT_UDH) ? 153 : 152;
+                $csmsSplit = ($this->config->getCsmsMethod() === Smpp::CSMS_8BIT_UDH) ? 153 : 152;
                 break;
             default:
                 $singleSmsOctetLimit = 254; // From SMPP standard
@@ -491,8 +432,8 @@ class Client implements SmppClientInterface
         // Figure out if we need to do CSMS, since it will affect our PDU
         if ($messageLength > $singleSmsOctetLimit) {
             $doCsms = true;
-            if (self::$csmsMethod != self::CSMS_PAYLOAD) {
-                $parts = $this->splitMessageString($message, $csmsSplit, $dataCoding);
+            if ($this->config->getCsmsMethod() !== Smpp::CSMS_PAYLOAD) {
+                $parts = $this->splitMessageString($message, $csmsSplit ?? 0, $dataCoding);
                 $shortMessage = reset($parts);
                 $csmsReference = $this->getCsmsReference();
             }
@@ -503,7 +444,7 @@ class Client implements SmppClientInterface
 
         // Deal with CSMS
         if ($doCsms) {
-            if (self::$csmsMethod == self::CSMS_PAYLOAD) {
+            if ($this->config->getCsmsMethod() === Smpp::CSMS_PAYLOAD) {
                 $payload = new Tag(Tag::MESSAGE_PAYLOAD, $message, $messageLength);
                 $tags[] = $payload;
                 return $this->submitShortMessage(
@@ -516,7 +457,7 @@ class Client implements SmppClientInterface
                     $scheduleDeliveryTime,
                     $validityPeriod
                 );
-            } elseif (self::$csmsMethod == self::CSMS_8BIT_UDH) {
+            } elseif ($this->config->getCsmsMethod() === Smpp::CSMS_8BIT_UDH) {
                 $sequenceNumber = 1;
                 foreach ($parts as $part) {
                     $udh = pack(
@@ -537,7 +478,7 @@ class Client implements SmppClientInterface
                         $priority,
                         $scheduleDeliveryTime,
                         $validityPeriod,
-                        (string)(self::$smsEsmClass | 0x40) //todo: check this
+                        (string)($this->config->getSmsEsmClass() | 0x40) //todo: check this
                     );
                     $sequenceNumber++;
                 }
@@ -603,7 +544,7 @@ class Client implements SmppClientInterface
     ): string
     {
         if (is_null($esmClass)) {
-            $esmClass = self::$smsEsmClass;
+            $esmClass = $this->config->getSmsEsmClass();
         }
 
         $shortMessageLength = strlen($shortMessage);
@@ -612,8 +553,8 @@ class Client implements SmppClientInterface
             'a1cca' . (strlen($source->value) + 1)
             . 'cca' . (strlen($destination->value) + 1)
             . 'ccc' . ($scheduleDeliveryTime ? 'a16x' : 'a1') . ($validityPeriod ? 'a16x' : 'a1')
-            . 'ccccca' . ($shortMessageLength + (self::$smsNullTerminateOctetstrings ? 1 : 0)),
-            self::$smsServiceType,
+            . 'ccccca' . ($shortMessageLength + (int)$this->config->isSmsNullTerminateOctetstrings()),
+            $this->config->getSmsServiceType(),
             $source->numberType,
             $source->numberingPlanIndicator,
             $source->value,
@@ -621,14 +562,14 @@ class Client implements SmppClientInterface
             $destination->numberingPlanIndicator,
             $destination->value,
             $esmClass,
-            self::$smsProtocolID,
+            $this->config->getSmsProtocolID(),
             $priority,
             $scheduleDeliveryTime,
             $validityPeriod,
-            self::$smsRegisteredDeliveryFlag,
-            self::$smsReplaceIfPresentFlag,
+            $this->config->getSmsRegisteredDeliveryFlag(),
+            $this->config->getSmsReplaceIfPresentFlag(),
             $dataCoding,
-            self::$smsSmDefaultMessageID,
+            $this->config->getSmsSmDefaultMessageID(),
             $shortMessageLength, //sm_length
             $shortMessage //short_message
         );
@@ -640,7 +581,7 @@ class Client implements SmppClientInterface
             }
         }
 
-        $response = $this->sendCommand(Smpp::SUBMIT_SM, $pdu);
+        $response = $this->sendCommand(Command::SUBMIT_SM, $pdu);
         /** @var array{msgid: string}|false $body */
         $body = unpack("a*msgid", $response->body);
         if (!$body) {
@@ -657,7 +598,7 @@ class Client implements SmppClientInterface
      */
     protected function getCsmsReference(): int
     {
-        $limit = (self::$csmsMethod == self::CSMS_8BIT_UDH) ? 255 : 65535;
+        $limit = ($this->config->getCsmsMethod() === Smpp::CSMS_8BIT_UDH) ? 255 : 65535;
         if (!isset($this->sarMessageReferenceNumber)) {
             $this->sarMessageReferenceNumber = mt_rand(0, $limit);
         }
@@ -780,7 +721,7 @@ class Client implements SmppClientInterface
     protected function parseSMS(Pdu $pdu): DeliveryReceipt|Sms
     {
         // Check command id
-        if ($pdu->id != Smpp::DELIVER_SM) {
+        if ($pdu->id != Command::DELIVER_SM) {
             throw new SmppInvalidArgumentException('PDU is not an received SMS');
         }
 
@@ -874,7 +815,7 @@ class Client implements SmppClientInterface
         $this->logger->debug("Received sms:\n" . print_r($sms, true));
 
         // Send response of receiving sms
-        $response = new Pdu(Smpp::DELIVER_SM_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
+        $response = new Pdu(Command::DELIVER_SM_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
         $this->sendPDU($response);
         return $sms;
     }
@@ -886,7 +827,7 @@ class Client implements SmppClientInterface
      */
     public function enquireLink(): Pdu
     {
-        return $this->sendCommand(Smpp::ENQUIRE_LINK, null);
+        return $this->sendCommand(Command::ENQUIRE_LINK, null);
     }
 
     /**
@@ -902,18 +843,18 @@ class Client implements SmppClientInterface
         $queueLength = count($this->pduQueue);
         for ($i = 0; $i < $queueLength; $i++) {
             $pdu = $this->pduQueue[$i];
-            if ($pdu->id == Smpp::ENQUIRE_LINK) {
+            if ($pdu->id == Command::ENQUIRE_LINK) {
                 //remove response
                 array_splice($this->pduQueue, $i, 1);
-                $this->sendPDU(new Pdu(Smpp::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00"));
+                $this->sendPDU(new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00"));
             }
         }
 
         // Check the transport for data
         if ($this->transport->hasData()) {
             $pdu = $this->readPDU();
-            if ($pdu && $pdu->id == Smpp::ENQUIRE_LINK) {
-                $this->sendPDU(new Pdu(Smpp::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00"));
+            if ($pdu && $pdu->id == Command::ENQUIRE_LINK) {
+                $this->sendPDU(new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00"));
             } elseif ($pdu) {
                 array_push($this->pduQueue, $pdu);
             }
@@ -1009,16 +950,16 @@ class Client implements SmppClientInterface
     protected function readPduResponse(int $sequenceNumber, int $commandID): Pdu|false
     {
         // Get response cmd id from command ID
-        $commandID = $commandID | Smpp::GENERIC_NACK;
+        $commandID = $commandID | Command::GENERIC_NACK;
 
         // Check the queue first
         $queueLength = count($this->pduQueue);
         for ($i = 0; $i < $queueLength; $i++) {
             $pdu = $this->pduQueue[$i];
             if (
-                ($pdu->sequence == $sequenceNumber && ($pdu->id == $commandID || $pdu->id == Smpp::GENERIC_NACK))
+                ($pdu->sequence == $sequenceNumber && ($pdu->id == $commandID || $pdu->id == Command::GENERIC_NACK))
                 ||
-                ($pdu->sequence == null && $pdu->id == Smpp::GENERIC_NACK)
+                ($pdu->sequence == null && $pdu->id == Command::GENERIC_NACK)
             ) {
                 // remove response pdu from queue
                 array_splice($this->pduQueue, $i, 1);
@@ -1032,11 +973,11 @@ class Client implements SmppClientInterface
             if ($pdu) {
                 if (
                     $pdu->sequence == $sequenceNumber
-                    && ($pdu->id == $commandID || $pdu->id == Smpp::GENERIC_NACK)
+                    && ($pdu->id == $commandID || $pdu->id == Command::GENERIC_NACK)
                 ) {
                     return $pdu;
                 }
-                if ($pdu->sequence == null && $pdu->id == Smpp::GENERIC_NACK) {
+                if ($pdu->sequence == null && $pdu->id == Command::GENERIC_NACK) {
                     return $pdu;
                 }
                 array_push($this->pduQueue, $pdu); // unknown PDU push to queue
@@ -1048,6 +989,7 @@ class Client implements SmppClientInterface
     /**
      * Reads incoming PDU from SMSC.
      * @return false|Pdu
+     * @throws SmppException
      */
     protected function readPDU(): Pdu|false
     {
@@ -1189,9 +1131,14 @@ class Client implements SmppClientInterface
         return $tag;
     }
 
+    /**
+     * @param PduInterface $pdu
+     * @return PduResponseInterface
+     * @throws SmppException
+     */
     public function send(PduInterface $pdu): PduResponseInterface
     {
-        // TODO: Implement send() method.
+        throw new SmppException('Method not implemented');
     }
 
     public function addMiddleware(MiddlewareInterface $middleware): void
