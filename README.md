@@ -67,8 +67,7 @@ class SmsBuilder
         bool $debug = false
     ) {
         $this->transport = new SocketTransport([$address], $port);
-        // Activate binary hex-output of server interaction
-        $this->transport->debug = $debug;
+        
         $this->transport->setRecvTimeout($timeout);
         $this->smppClient = new SmppClient($this->transport);
 

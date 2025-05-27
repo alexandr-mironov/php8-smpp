@@ -7,9 +7,11 @@ namespace Smpp\Transport;
 use ArrayIterator;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+use Smpp\Configs\SocketTransportConfig;
 use Smpp\Exceptions\SmppException;
 use Smpp\Exceptions\SocketTransportException;
-use Socket as SocketClass;
+use Socket;
 
 /**
  * TCP Socket Transport for use with multiple protocols.
@@ -24,37 +26,24 @@ use Socket as SocketClass;
 class SocketTransport
 {
     /**
-     * @var SocketClass|null $socket - instance of Socket (since PHP 8)
+     * @var Socket|null $socket - instance of Socket (since PHP 8)
      * @see https://www.php.net/manual/ru/class.socket.php
      */
-    protected ?SocketClass $socket = null;
+    protected ?Socket $socket = null;
 
     /** @var array<mixed> */
     protected array $hosts;
 
-    /** @var bool */
-    public bool $debug;
-
-    /** @var int */
-    protected static int $defaultSendTimeout = 100;
-
-    /** @var int */
-    protected static int $defaultRecvTimeout = 750;
-
-    /** @var bool */
-    public static bool $defaultDebug = false;
-
-    /** @var bool */
-    public static bool $forceIpv6 = false;
-
-    /** @var bool */
-    public static bool $forceIpv4 = false;
-
-    /** @var bool */
-    public static bool $randomHost = false;
-
     /** @var int define MSG_DONTWAIT as class const to prevent bug https://bugs.php.net/bug.php?id=48326 */
     private const MSG_DONTWAIT = 64;
+    /**
+     * @var SocketTransportConfig
+     */
+    private SocketTransportConfig $config;
+    /**
+     * @var LoggerInterface
+     */
+    private LoggerInterface $logger;
 
     /**
      * Construct a new socket for this transport to use.
@@ -62,15 +51,20 @@ class SocketTransport
      * @param string[] $hosts list of hosts to try.
      * @param string[]|int|string $ports list of ports to try, or a single common port
      * @param boolean $persist use persistent sockets
-     * @param LoggerInterface $logger
+     * @param ?LoggerInterface $logger
+     * @param SocketTransportConfig|null $config
      */
     public function __construct(
         array $hosts,
         array|int|string $ports,
         protected bool $persist = false,
-        private LoggerInterface $logger
+        ?LoggerInterface $logger = null,
+        ?SocketTransportConfig $config = null
     )
     {
+        $this->config = ($config === null) ? new SocketTransportConfig() : $config;
+        $this->logger = ($logger === null) ? new NullLogger() : $logger;
+
         // Deal with optional port
         $h = [];
         foreach ($hosts as $key => $host) {
@@ -79,7 +73,7 @@ class SocketTransport
                 is_array($ports) ? $ports[$key] : $ports
             ];
         }
-        if (self::$randomHost) {
+        if ($this->config->isRandomHost()) {
             shuffle($h);
         }
         $this->resolveHosts($h);
@@ -106,7 +100,7 @@ class SocketTransport
                 // IPv6 address
                 $ip6s[] = $hostname;
             } else { // Do a DNS lookup
-                if (!self::$forceIpv4) {
+                if (!$this->config->isForceIpv4()) {
                     // if not in IPv4 only mode, check the AAAA records first
                     $records = dns_get_record($hostname, DNS_AAAA);
                     if ($records === false) {
@@ -121,7 +115,7 @@ class SocketTransport
                     }
                     $this->logger->debug("IPv6 addresses for $hostname: " . implode(', ', $ip6s));
                 }
-                if (!self::$forceIpv6) {
+                if (!$this->config->isForceIpv6()) {
                     // if not in IPv6 mode check the A records also
                     $records = dns_get_record($hostname, DNS_A);
                     if ($records === false) {
@@ -144,10 +138,10 @@ class SocketTransport
             }
 
             // Did we get any results?
-            if (self::$forceIpv4 && empty($ip4s)) {
+            if ($this->config->isForceIpv4() && empty($ip4s)) {
                 continue;
             }
-            if (self::$forceIpv6 && empty($ip6s)) {
+            if ($this->config->isForceIpv6() && empty($ip6s)) {
                 continue;
             }
             if (empty($ip4s) && empty($ip6s)) {
@@ -172,9 +166,9 @@ class SocketTransport
      * Get a reference to the socket.
      * You should use the public functions rather than the socket directly
      *
-     * @return SocketClass
+     * @return Socket
      */
-    public function getSocket(): SocketClass
+    public function getSocket(): Socket
     {
         return $this->socket;
     }
@@ -214,7 +208,7 @@ class SocketTransport
     public function setSendTimeout(int $timeout): bool
     {
         if (!$this->isOpen()) {
-            self::$defaultSendTimeout = $timeout;
+            $this->config->setDefaultSendTimeout($timeout);
             return false; // todo: check this
         } else {
             return socket_set_option(
@@ -235,7 +229,7 @@ class SocketTransport
     public function setRecvTimeout(int $timeout): bool
     {
         if (!$this->isOpen()) {
-            self::$defaultRecvTimeout = $timeout;
+            $this->config->setDefaultRecvTimeout($timeout);
             return false; // todo: check this
         } else {
             return socket_set_option(
@@ -256,7 +250,7 @@ class SocketTransport
      */
     public function isOpen(): bool
     {
-        if (!$this->socket instanceof SocketClass) {
+        if (!$this->socket instanceof Socket) {
             return false;
         }
 
@@ -272,7 +266,7 @@ class SocketTransport
         }
 
         // if there is an exception on our socket it's probably dead
-        /** @var SocketClass[] $exceptList */
+        /** @var Socket[] $exceptList */
         if (!empty($exceptList)) {
             return false;
         }
@@ -304,10 +298,10 @@ class SocketTransport
      */
     public function open(): void
     {
-        $sendTimeout = $this->millisecToSolArray(self::$defaultSendTimeout);
-        $receiveTimeout = $this->millisecToSolArray(self::$defaultRecvTimeout);
-        if (!self::$forceIpv4) {
-            /** @var SocketClass|false $socket6 */
+        $sendTimeout = $this->millisecToSolArray($this->config->getDefaultSendTimeout());
+        $receiveTimeout = $this->millisecToSolArray($this->config->getDefaultRecvTimeout());
+        if (!$this->config->isForceIpv4()) {
+            /** @var Socket|false $socket6 */
             $socket6 = @socket_create(AF_INET6, SOCK_STREAM, SOL_TCP);
             if ($socket6 == false) {
                 throw new SocketTransportException(
@@ -318,8 +312,8 @@ class SocketTransport
             socket_set_option($socket6, SOL_SOCKET, SO_SNDTIMEO, $sendTimeout);
             socket_set_option($socket6, SOL_SOCKET, SO_RCVTIMEO, $receiveTimeout);
         }
-        if (!self::$forceIpv6) {
-            /** @var SocketClass|false $socket4 */
+        if (!$this->config->isForceIpv6()) {
+            /** @var Socket|false $socket4 */
             $socket4 = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
             if ($socket4 == false) {
                 throw new SocketTransportException(
@@ -333,13 +327,14 @@ class SocketTransport
         $it = new ArrayIterator($this->hosts);
         while ($it->valid()) {
             [$hostname, $port, $ip6s, $ip4s] = $it->current();
-            if (!self::$forceIpv4 && !empty($ip6s)) { // Attempt IPv6s first
+            if (!$this->config->isForceIpv4() && !empty($ip6s)) { // Attempt IPv6s first
                 foreach ($ip6s as $ip) {
-                    $this->logger->info("Connecting to $ip:$port...");
+                    $this->logger->debug("Connecting to $ip:$port...");
+                    /** @var Socket $socket6 */
                     $result = @socket_connect($socket6, $ip, $port);
                     if ($result) {
-                        $this->logger->info("Connected to $ip:$port!");
-                        if (isset($socket4) && $socket4 instanceof SocketClass) {
+                        $this->logger->debug("Connected to $ip:$port!");
+                        if (isset($socket4) && $socket4 instanceof Socket) {
                             @socket_close($socket4);
                         }
                         $this->socket = $socket6;
@@ -352,13 +347,14 @@ class SocketTransport
                     }
                 }
             }
-            if (!self::$forceIpv6 && !empty($ip4s)) {
+            if (!$this->config->isForceIpv6() && !empty($ip4s)) {
                 foreach ($ip4s as $ip) {
-                    $this->logger->info("Connecting to $ip:$port...");
+                    $this->logger->debug("Connecting to $ip:$port...");
+                    /** @var Socket $socket4 */
                     $result = @socket_connect($socket4, $ip, $port);
                     if ($result) {
-                        $this->logger->info("Connected to $ip:$port!");
-                        if (isset($socket6) && $socket6 instanceof SocketClass) {
+                        $this->logger->debug("Connected to $ip:$port!");
+                        if (isset($socket6) && $socket6 instanceof Socket) {
                             @socket_close($socket6);
                         }
                         $this->socket = $socket4;
@@ -395,6 +391,9 @@ class SocketTransport
      */
     public function hasData(): bool
     {
+        if ($this->socket === null) {
+            throw new SocketTransportException('Socket is null');
+        }
         $r = [$this->socket];
         $w = null;
         $e = null;
@@ -405,7 +404,7 @@ class SocketTransport
             );
         }
 
-        /** @var SocketClass[] $r */
+        /** @var Socket[] $r */
         return !empty($r);
     }
 
@@ -442,12 +441,11 @@ class SocketTransport
      *
      * @param int $length
      * @return string
-     * @throws SmppException
      */
     public function readAll(int $length): string
     {
         if ($this->socket === null) {
-            throw new SmppException('Socket is null'); // todo: replace exception class
+            throw new SocketTransportException('Socket is null');
         }
         $datagram = "";
         $r = 0;
@@ -480,14 +478,14 @@ class SocketTransport
                     socket_last_error()
                 );
             }
-            /** @var SocketClass[] $except */
+            /** @var Socket[] $except */
             if (!empty($except)) {
                 throw new SocketTransportException(
                     'Socket exception while waiting for data; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
-            /** @var SocketClass[] $read */
+            /** @var Socket[] $read */
             if (empty($read)) {
                 throw new SocketTransportException('Timed out waiting for data on socket');
             }
@@ -500,14 +498,18 @@ class SocketTransport
      *
      * @param string $buffer
      * @param integer $length
+     * @throws SmppException
      */
     public function write(string $buffer, int $length): void
     {
+        if ($this->socket === null) {
+            throw new SocketTransportException('Socket is null');
+        }
         $r = $length;
         /** @var array{sec: int, usec: int} $writeTimeout */
         $writeTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_SNDTIMEO);
         if (!$writeTimeout) {
-            throw new SmppException(); // todo: replace exception, add exception message
+            throw new SocketTransportException('Write timeout is not set');
         }
 
         while ($r > 0) {
@@ -537,14 +539,14 @@ class SocketTransport
                     socket_last_error()
                 );
             }
-            /** @var SocketClass[] $except */
+            /** @var Socket[] $except */
             if (!empty($except)) {
                 throw new SocketTransportException(
                     'Socket exception while waiting to write data; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
-            /** @var SocketClass[] $write */
+            /** @var Socket[] $write */
             if (empty($write)) {
                 throw new SocketTransportException('Timed out waiting to write data on socket');
             }

@@ -78,9 +78,9 @@ class Client implements SmppClientInterface
      */
     private LoggerInterface $logger;
     /**
-     * @var SmppConfig|null
+     * @var SmppConfig
      */
-    private ?SmppConfig $config;
+    private SmppConfig $config;
 
     /**
      * Construct the SMPP Client class
