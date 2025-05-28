@@ -146,7 +146,7 @@ class Smpp
     public const CSMS_16BIT_TAGS = 0;
 
     /**
-     * @var integer Use message payload for CSMS
+     * @var integer Use message payload for CSMS (Concatenated Short Message Service)
      */
     public const CSMS_PAYLOAD = 1;
 

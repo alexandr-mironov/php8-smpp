@@ -313,8 +313,13 @@ class Client implements SmppClientInterface
         $posDate = strpos($reply->body, "\0", $posID + 1);
 
         if ($posID === false) {
-            // todo: replace exception and add message
-            throw new Exception();
+            $this->logger->debug(
+                "Invalid response",
+                [
+                    'body hex' => $reply->body,
+                ]
+            );
+            throw new SmppException('Invalid response');
         }
 
         $data = [
@@ -326,8 +331,13 @@ class Client implements SmppClientInterface
         $status = unpack("cmessage_state/cerror_code", substr($reply->body, $posDate + 1));
 
         if (!$status) {
-            // todo: replace exception and add message
-            throw new Exception();
+            $this->logger->debug(
+                "unable to unpack message_state & error_code",
+                [
+                    'body hex' => $reply->body,
+                ]
+            );
+            throw new SmppException('Invalid response');
         }
 
         return array_merge($data, $status);
@@ -617,14 +627,14 @@ class Client implements SmppClientInterface
      * Uses str_split if at all possible, and will examine all split points for escape chars if it's required.
      *
      * @param string $message
-     * @param int<1,max> $split
+     * @param int<1,max> $chunkSize
      * @param integer $dataCoding (optional)
      *
-     * @return array<int|string>
+     * @return string[]
      */
     protected function splitMessageString(
         string $message,
-        int $split,
+        int $chunkSize,
         int $dataCoding = Smpp::DATA_CODING_DEFAULT
     ): array
     {
@@ -632,20 +642,20 @@ class Client implements SmppClientInterface
             case Smpp::DATA_CODING_DEFAULT:
                 $messageLength = strlen($message);
                 // Do we need to do php based split?
-                $numParts = floor($messageLength / $split);
-                if ($messageLength % $split == 0) {
+                $numParts = floor($messageLength / $chunkSize);
+                if ($messageLength % $chunkSize == 0) {
                     $numParts--;
                 }
                 $slowSplit = false;
 
                 for ($i = 1; $i <= $numParts; $i++) {
-                    if ($message[$i * $split - 1] == "\x1B") {
+                    if ($message[$i * $chunkSize - 1] == "\x1B") {
                         $slowSplit = true;
                         break;
                     }
                 }
                 if (!$slowSplit) {
-                    return str_split($message, $split);
+                    return str_split($message, $chunkSize);
                 }
 
                 // Split the message char-by-char
@@ -654,8 +664,8 @@ class Client implements SmppClientInterface
                 $n = 0;
                 for ($i = 0; $i < $messageLength; $i++) {
                     $c = $message[$i];
-                    // reset on $split or if last char is a GSM 03.38 escape char
-                    if ($n == $split || ($n == ($split - 1) && $c == "\x1B")) {
+                    // reset on $quantSize or if last char is a GSM 03.38 escape char
+                    if ($n == $chunkSize || ($n == ($chunkSize - 1) && $c == "\x1B")) {
                         $parts[] = $part;
                         $n = 0;
                         $part = null;
@@ -670,7 +680,7 @@ class Client implements SmppClientInterface
              */
             case Smpp::DATA_CODING_UCS2:
             default:
-                return str_split($message, $split);
+                return str_split($message, $chunkSize);
         }
     }
 
