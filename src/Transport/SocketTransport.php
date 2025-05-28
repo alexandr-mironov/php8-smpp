@@ -327,7 +327,7 @@ class SocketTransport
         $it = new ArrayIterator($this->hosts);
         while ($it->valid()) {
             [$hostname, $port, $ip6s, $ip4s] = $it->current();
-            if (!$this->config->isForceIpv4() && !empty($ip6s)) { // Attempt IPv6s first
+            if (!$this->config->isForceIpv4() && !empty($ip6s) && isset($socket6)) { // Attempt IPv6s first
                 foreach ($ip6s as $ip) {
                     $this->logger->debug("Connecting to $ip:$port...");
                     /** @var Socket $socket6 */
@@ -347,7 +347,7 @@ class SocketTransport
                     }
                 }
             }
-            if (!$this->config->isForceIpv6() && !empty($ip4s)) {
+            if (!$this->config->isForceIpv6() && !empty($ip4s) && isset($socket4)) {
                 foreach ($ip4s as $ip) {
                     $this->logger->debug("Connecting to $ip:$port...");
                     /** @var Socket $socket4 */
@@ -439,7 +439,7 @@ class SocketTransport
      * Read all the bytes, and block until they are read.
      * Timeout throws SocketTransportException
      *
-     * @param int $length
+     * @param int<1,max> $length
      * @return string
      */
     public function readAll(int $length): string
@@ -506,7 +506,7 @@ class SocketTransport
             throw new SocketTransportException('Socket is null');
         }
         $r = $length;
-        /** @var array{sec: int, usec: int} $writeTimeout */
+        /** @var false|array{sec: int, usec: int} $writeTimeout */
         $writeTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_SNDTIMEO);
         if (!$writeTimeout) {
             throw new SocketTransportException('Write timeout is not set');

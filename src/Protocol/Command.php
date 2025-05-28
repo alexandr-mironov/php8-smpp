@@ -9,6 +9,9 @@ namespace Smpp\Protocol;
  *
  * Command ids - SMPP v3.4 - 5.1.2.1 page 110-111
  *
+ * response command id can be gets by $responseCommandId = $commandId | Command::GENERIC_NACK
+ * response command id constants maybe unused for this reason
+ *
  * @package Smpp\Protocol
  */
 class Command
