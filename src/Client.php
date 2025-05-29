@@ -443,9 +443,8 @@ class Client implements SmppClientInterface
         if ($messageLength > $singleSmsOctetLimit) {
             $doCsms = true;
             if ($this->config->getCsmsMethod() !== Smpp::CSMS_PAYLOAD) {
-                $parts = $this->splitMessageString($message, $csmsSplit ?? 0, $dataCoding);
+                $parts = $this->splitMessageString($message, $csmsSplit ?? 132, $dataCoding);
                 $shortMessage = reset($parts);
-                $csmsReference = $this->getCsmsReference();
             }
         } else {
             $shortMessage = $message;
@@ -467,22 +466,22 @@ class Client implements SmppClientInterface
                     $scheduleDeliveryTime,
                     $validityPeriod
                 );
-            } elseif ($this->config->getCsmsMethod() === Smpp::CSMS_8BIT_UDH) {
+            } elseif ($this->config->getCsmsMethod() === Smpp::CSMS_8BIT_UDH && isset($parts)) {
                 $sequenceNumber = 1;
                 foreach ($parts as $part) {
-                    $udh = pack(
+                    $userDataHeader = pack(
                         'cccccc',
                         5,
                         0,
                         3,
-                        substr((string)$csmsReference, 1, 1),
+                        substr((string)$this->getCsmsReference(), 1, 1),
                         count($parts),
                         $sequenceNumber
                     );
                     $res = $this->submitShortMessage(
                         $from,
                         $to,
-                        $udh . $part,
+                        $userDataHeader . $part,
                         $tags,
                         $dataCoding,
                         $priority,
@@ -492,12 +491,12 @@ class Client implements SmppClientInterface
                     );
                     $sequenceNumber++;
                 }
-                return $res;
+                return $res ?? "";
             } else {
-                $sarMessageRefNumber = new Tag(Tag::SAR_MSG_REF_NUM, $csmsReference, 2, 'n');
-                $sarTotalSegments = new Tag(Tag::SAR_TOTAL_SEGMENTS, count($parts), 1, 'c');
+                $sarMessageRefNumber = new Tag(Tag::SAR_MSG_REF_NUM, $this->getCsmsReference(), 2, 'n');
+                $sarTotalSegments = new Tag(Tag::SAR_TOTAL_SEGMENTS, count($parts ?? []), 1, 'c');
                 $sequenceNumber = 1;
-                foreach ($parts as $part) {
+                foreach ($parts ?? [] as $part) {
                     $sartags = [
                         $sarMessageRefNumber,
                         $sarTotalSegments,
@@ -515,7 +514,7 @@ class Client implements SmppClientInterface
                     );
                     $sequenceNumber++;
                 }
-                return $res;
+                return $res ?? "";
             }
         }
 

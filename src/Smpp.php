@@ -140,6 +140,8 @@ class Smpp
     const STATE_UNKNOWN       = 7;
     const STATE_REJECTED      = 8;
 
+    // Message concatenating
+    // CSMS - Concatenated Short Message Service
     /**
      * @var integer Use sar_msg_ref_num and sar_total_segments with 16 bit tags
      */
@@ -151,7 +153,7 @@ class Smpp
     public const CSMS_PAYLOAD = 1;
 
     /**
-     * @var integer Embed a UDH in the message with 8-bit reference.
+     * @var integer Embed a UDH (User Data Header) in the message with 8-bit reference.
      */
     public const CSMS_8BIT_UDH = 2;
 
