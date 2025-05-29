@@ -38,6 +38,7 @@ class SocketTransport
      * @var int define MSG_DONTWAIT as class const to prevent bug https://bugs.php.net/bug.php?id=48326
      */
     private const MSG_DONTWAIT = 64;
+
     /**
      * @var SocketTransportConfig
      */
@@ -246,8 +247,8 @@ class SocketTransport
             return false;
         }
 
-        $readList = null;
-        $writeList = null;
+        $readList   = null;
+        $writeList  = null;
         $exceptList = [$this->socket];
 
         if (socket_select($readList, $writeList, $exceptList, 0) === false) {
@@ -276,7 +277,7 @@ class SocketTransport
     {
         $usec = $millisec * 1000;
         return [
-            'sec' => floor($usec / 1000000),
+            'sec'  => floor($usec / 1000000),
             'usec' => $usec % 1000000
         ];
     }
@@ -290,7 +291,7 @@ class SocketTransport
      */
     public function open(): void
     {
-        $sendTimeout = $this->millisecToSolArray($this->config->getDefaultSendTimeout());
+        $sendTimeout    = $this->millisecToSolArray($this->config->getDefaultSendTimeout());
         $receiveTimeout = $this->millisecToSolArray($this->config->getDefaultRecvTimeout());
         if (!$this->config->isForceIpv4()) {
             /** @var Socket|false $socket6 */
@@ -386,8 +387,8 @@ class SocketTransport
         if ($this->socket === null) {
             throw new SocketTransportException('Socket is null');
         }
-        $read = [$this->socket];
-        $write = null;
+        $read   = [$this->socket];
+        $write  = null;
         $except = null;
         if (socket_select($read, $write, $except, 0) === false) {
             throw new SocketTransportException(
@@ -441,9 +442,9 @@ class SocketTransport
             throw new SocketTransportException('Socket is null');
         }
         $datagram = "";
-        $r = 0;
+        $r        = 0;
         /**
-         * @var $readTimeout false|array{sec: int, usec: int}
+         * @var false|array{sec: int, usec: int} $readTimeout
          */
         $readTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_RCVTIMEO);
         if ($readTimeout === false) {
@@ -451,7 +452,7 @@ class SocketTransport
         }
 
         while ($r < $length) {
-            $buf = '';
+            $buf           = '';
             $receivedBytes = socket_recv($this->socket, $buf, $length - $r, self::MSG_DONTWAIT);
             if ($receivedBytes === false) {
                 throw new SocketTransportException(
@@ -459,15 +460,15 @@ class SocketTransport
                     socket_last_error()
                 );
             }
-            $r += $receivedBytes;
+            $r        += $receivedBytes;
             $datagram .= $buf;
             if ($r === $length) {
                 return $datagram;
             }
 
             // wait for data to be available, up to timeout
-            $read = [$this->socket];
-            $write = null;
+            $read   = [$this->socket];
+            $write  = null;
             $except = [$this->socket];
 
             // check
@@ -508,9 +509,7 @@ class SocketTransport
             throw new SocketTransportException('Socket is null');
         }
         $r = $length;
-        /**
-         * @var $writeTimeout false|array{sec: int, usec: int}
-         */
+        /** @var false|array{sec: int, usec: int} $writeTimeout */
         $writeTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_SNDTIMEO);
         if (!$writeTimeout) {
             throw new SocketTransportException('Write timeout is not set');
@@ -532,8 +531,8 @@ class SocketTransport
             $buffer = substr($buffer, $wrote);
 
             // wait for the socket to accept more data, up to timeout
-            $read = null;
-            $write = [$this->socket];
+            $read   = null;
+            $write  = [$this->socket];
             $except = [$this->socket];
 
             // check

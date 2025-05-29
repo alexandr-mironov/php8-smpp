@@ -1,4 +1,0 @@
-parameters:
-    ignoreErrors:
-        - message: '#^Method Smpp\\\\Transport\\\\SocketTransport::readAll\(\) should return string but return statement is missing\.$#'
-          path: src/Transport/SocketTransport.php
