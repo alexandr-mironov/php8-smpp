@@ -26,7 +26,7 @@ use Socket;
 class SocketTransport
 {
     /**
-     * @var Socket|null $socket - instance of Socket (since PHP 8)
+     * @var Socket|null instance of Socket (since PHP 8)
      * @see https://www.php.net/manual/ru/class.socket.php
      */
     protected ?Socket $socket = null;
@@ -34,7 +34,9 @@ class SocketTransport
     /** @var array<mixed> */
     protected array $hosts;
 
-    /** @var int define MSG_DONTWAIT as class const to prevent bug https://bugs.php.net/bug.php?id=48326 */
+    /**
+     * @var int define MSG_DONTWAIT as class const to prevent bug https://bugs.php.net/bug.php?id=48326
+     */
     private const MSG_DONTWAIT = 64;
     /**
      * @var SocketTransportConfig
@@ -441,10 +443,9 @@ class SocketTransport
         $datagram = "";
         $r = 0;
         /**
-         * @var array{sec: int, usec: int} $readTimeout
+         * @var $readTimeout false|array{sec: int, usec: int}
          */
         $readTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_RCVTIMEO);
-
         if ($readTimeout === false) {
             throw new SocketTransportException("Read timeout is not set");
         }
@@ -488,6 +489,9 @@ class SocketTransport
                 throw new SocketTransportException('Timed out waiting for data on socket');
             }
         }
+
+        // for static analyzers
+        return $datagram;
     }
 
     /**
@@ -504,7 +508,9 @@ class SocketTransport
             throw new SocketTransportException('Socket is null');
         }
         $r = $length;
-        /** @var false|array{sec: int, usec: int} $writeTimeout */
+        /**
+         * @var $writeTimeout false|array{sec: int, usec: int}
+         */
         $writeTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_SNDTIMEO);
         if (!$writeTimeout) {
             throw new SocketTransportException('Write timeout is not set');
