@@ -1,6 +1,6 @@
+includes:
+  - phpstan-baseline.neon
 parameters:
-  includes:
-      - phpstan-baseline.neon
   bootstrapFiles:
     - vendor/autoload.php
   level: 7
