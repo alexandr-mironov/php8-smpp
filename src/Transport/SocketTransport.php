@@ -211,12 +211,7 @@ class SocketTransport
             $this->config->setDefaultSendTimeout($timeout);
             return false; // todo: check this
         } else {
-            return socket_set_option(
-                $this->socket,
-                SOL_SOCKET,
-                SO_SNDTIMEO,
-                $this->millisecToSolArray($timeout)
-            );
+            return $this->setSocketOption(SO_SNDTIMEO, $this->millisecToSolArray($timeout));
         }
     }
 
@@ -232,12 +227,7 @@ class SocketTransport
             $this->config->setDefaultRecvTimeout($timeout);
             return false; // todo: check this
         } else {
-            return socket_set_option(
-                $this->socket,
-                SOL_SOCKET,
-                SO_RCVTIMEO,
-                $this->millisecToSolArray($timeout)
-            );
+            return $this->setSocketOption(SO_RCVTIMEO, $this->millisecToSolArray($timeout));
         }
     }
 
@@ -380,7 +370,7 @@ class SocketTransport
     public function close(): void
     {
         socket_set_block($this->socket);
-        socket_set_option($this->socket, SOL_SOCKET, SO_LINGER, ['l_onoff' => 1, 'l_linger' => 1]);
+        $this->setSocketOption(SO_LINGER, ['l_onoff' => 1, 'l_linger' => 1]);
         socket_close($this->socket);
     }
 
@@ -394,18 +384,18 @@ class SocketTransport
         if ($this->socket === null) {
             throw new SocketTransportException('Socket is null');
         }
-        $r = [$this->socket];
-        $w = null;
-        $e = null;
-        if (socket_select($r, $w, $e, 0) === false) {
+        $read = [$this->socket];
+        $write = null;
+        $except = null;
+        if (socket_select($read, $write, $except, 0) === false) {
             throw new SocketTransportException(
                 'Could not examine socket; ' . socket_strerror(socket_last_error()),
                 socket_last_error()
             );
         }
 
-        /** @var Socket[] $r */
-        return !empty($r);
+        /** @var Socket[] $read */
+        return !empty($read);
     }
 
     /**
@@ -420,19 +410,19 @@ class SocketTransport
      */
     public function read(int $length): false|string
     {
-        $d = socket_read($this->socket, $length, PHP_BINARY_READ);
+        $datagram = socket_read($this->socket, $length, PHP_BINARY_READ);
         // sockets give EAGAIN on timeout
-        if ($d === false && socket_last_error() === SOCKET_EAGAIN) {
+        if ($datagram === false && socket_last_error() === SOCKET_EAGAIN) {
             return false;
         }
-        if ($d === false) {
+        if ($datagram === false) {
             throw new SocketTransportException(
                 'Could not read ' . $length . ' bytes from socket; ' . socket_strerror(socket_last_error()),
                 socket_last_error()
             );
         }
 
-        return $d ?: false;
+        return $datagram ?: false;
     }
 
     /**
@@ -441,6 +431,7 @@ class SocketTransport
      *
      * @param int<1,max> $length
      * @return string
+     * @throws SocketTransportException
      */
     public function readAll(int $length): string
     {
@@ -449,8 +440,15 @@ class SocketTransport
         }
         $datagram = "";
         $r = 0;
-        /** @var array{sec: int, usec: int} $readTimeout */
+        /**
+         * @var array{sec: int, usec: int} $readTimeout
+         */
         $readTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_RCVTIMEO);
+
+        if ($readTimeout === false) {
+            throw new SocketTransportException("Read timeout is not set");
+        }
+
         while ($r < $length) {
             $buf = '';
             $receivedBytes = socket_recv($this->socket, $buf, $length - $r, self::MSG_DONTWAIT);
@@ -462,7 +460,7 @@ class SocketTransport
             }
             $r += $receivedBytes;
             $datagram .= $buf;
-            if ($r == $length) {
+            if ($r === $length) {
                 return $datagram;
             }
 
