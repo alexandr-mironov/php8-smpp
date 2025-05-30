@@ -1,0 +1,9 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Smpp\Exceptions;
+
+class PDUParseException extends SmppException
+{
+}
