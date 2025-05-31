@@ -22,6 +22,8 @@ namespace Smpp\Pdu;
  */
 class PDUHeader
 {
+    public const PDU_HEADER_LENGTH = 16;
+
     public function __construct(
         private int $commandLength,
         private int $commandId,

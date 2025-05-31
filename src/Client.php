@@ -17,7 +17,9 @@ use Smpp\Exceptions\ClosedTransportException;
 use Smpp\Exceptions\SmppException;
 use Smpp\Exceptions\SmppInvalidArgumentException;
 use Smpp\Exceptions\SocketTransportException;
+use Smpp\Pdu\PDUHeader;
 use Smpp\Protocol\Command;
+use Smpp\Protocol\PDUBuilder;
 use Smpp\Protocol\PDUParser;
 use Smpp\Transport\SocketTransport;
 
@@ -82,6 +84,10 @@ class Client implements SmppClientInterface
      * @var PDUParser
      */
     private PDUParser $parser;
+    /**
+     * @var PDUBuilder
+     */
+    private PDUBuilder $builder;
 
     /**
      * Construct the SMPP Client class
@@ -99,7 +105,8 @@ class Client implements SmppClientInterface
         $this->config = ($config === null) ? new SmppConfig() : $config;
         $this->logger = ($logger === null) ? new NullLogger() : $logger;
 
-        $this->parser = new PDUParser();
+        $this->builder = new PDUBuilder($this->logger);
+        $this->parser = new PDUParser($this->logger);
     }
 
     /**
@@ -210,15 +217,8 @@ class Client implements SmppClientInterface
      */
     protected function sendPDU(Pdu $pdu): void
     {
-        $length = strlen($pdu->body) + 16;
-        $header = pack("NNNN", $length, $pdu->id, $pdu->status, $pdu->sequence);
-
-        $this->logger->debug("Read PDU         : $length bytes");
-        $this->logger->debug(' ' . chunk_split(bin2hex($header . $pdu->body), 2, " "));
-        $this->logger->debug(' command_id      : 0x' . dechex($pdu->id));
-        $this->logger->debug(' sequence number : ' . $pdu->sequence);
-
-        $this->transport->write($header . $pdu->body, $length);
+        $binaryPdu = $this->builder->packPdu($pdu);
+        $this->transport->write($binaryPdu->getData(), $binaryPdu->getLength());
     }
 
     /**
@@ -279,14 +279,14 @@ class Client implements SmppClientInterface
     protected function readPDU(): Pdu|false
     {
         // Read PDU header
-        $bufHeaders = $this->transport->read(PDUParser::PDU_HEADER_LENGTH);
+        $bufHeaders = $this->transport->read(PDUHeader::PDU_HEADER_LENGTH);
         if ($bufHeaders === false) {
             return false;
         }
 
         // Parse PDU header to get body length and read all PDU
-        $pduHeader  = $this->parser->parseHeader($bufHeaders);
-        $bodyLength = $pduHeader->getCommandLength() - PDUParser::PDU_HEADER_LENGTH;
+        $pduHeader  = $this->parser->parsePduHeader($bufHeaders);
+        $bodyLength = $pduHeader->getCommandLength() - PDUHeader::PDU_HEADER_LENGTH;
 
         // Read PDU body
         $body = null;
@@ -604,92 +604,7 @@ class Client implements SmppClientInterface
             throw new SmppInvalidArgumentException('PDU is not an received SMS');
         }
 
-        // Unpack PDU
-        $unpackedElements = unpack("C*", $pdu->body);
-
-        if (!$unpackedElements) {
-            $this->logger->error("Format not matches with PDU body contents", [
-                'body' => $pdu->body
-            ]);
-            throw new SmppException('Format not matches with PDU body contents');
-        }
-
-        // Read mandatory params
-        $serviceType = $this->getString($unpackedElements, 6, true);
-
-        //
-        $sourceAddressNumberType             = next($unpackedElements);
-        $sourceAddressNumberingPlanIndicator = next($unpackedElements);
-        $sourceAddress                       = $this->getString($unpackedElements, 21);
-        $source                              = new Address($sourceAddress, $sourceAddressNumberType, $sourceAddressNumberingPlanIndicator);
-
-        //
-        $destinationAddrTon = next($unpackedElements);
-        $destinationAddrNPI = next($unpackedElements);
-        $destinationAddr    = $this->getString($unpackedElements, 21);
-        $destination        = new Address($destinationAddr, $destinationAddrTon, $destinationAddrNPI);
-
-        $esmClass     = next($unpackedElements);
-        $protocolId   = next($unpackedElements);
-        $priorityFlag = next($unpackedElements);
-        next($unpackedElements); // schedule_delivery_time
-        next($unpackedElements); // validity_period
-        $registeredDelivery = next($unpackedElements);
-        next($unpackedElements); // replace_if_present_flag
-        $dataCoding = next($unpackedElements);
-        next($unpackedElements); // sm_default_msg_id
-        $sm_length = next($unpackedElements);
-        $message   = $this->getString($unpackedElements, $sm_length);
-
-        // Check for optional params, and parse them
-        if (current($unpackedElements) !== false) {
-            $tags = [];
-            do {
-                $tag = $this->parseTag($unpackedElements);
-                if ($tag !== false) {
-                    $tags[] = $tag;
-                }
-            } while (current($unpackedElements) !== false);
-        } else {
-            $tags = null;
-        }
-
-        if (($esmClass & Smpp::ESM_DELIVER_SMSC_RECEIPT) != 0) {
-            $sms = new DeliveryReceipt(
-                $pdu->id,
-                $pdu->status,
-                $pdu->sequence,
-                $pdu->body,
-                $serviceType,
-                $source,
-                $destination,
-                $esmClass,
-                $protocolId,
-                $priorityFlag,
-                $registeredDelivery,
-                $dataCoding,
-                $message,
-                $tags
-            );
-            $sms->parseDeliveryReceipt();
-        } else {
-            $sms = new Sms(
-                $pdu->id,
-                $pdu->status,
-                $pdu->sequence,
-                $pdu->body,
-                $serviceType,
-                $source,
-                $destination,
-                $esmClass,
-                $protocolId,
-                $priorityFlag,
-                $registeredDelivery,
-                $dataCoding,
-                $message,
-                $tags
-            );
-        }
+        $sms = $this->parser->parseSms($pdu);
 
         $this->logger->debug("Received sms:\n" . print_r($sms, true));
 
@@ -697,88 +612,6 @@ class Client implements SmppClientInterface
         $response = new Pdu(Command::DELIVER_SM_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
         $this->sendPDU($response);
         return $sms;
-    }
-
-    /**
-     * Reads C style null padded string from the char array.
-     * Reads until $maxlen or null byte.
-     *
-     * @param array<mixed> $ar - input array
-     * @param integer $maxLength - maximum length to read.
-     * @param boolean $firstRead - is this the first bytes read from array?
-     * @return string.
-     */
-    protected function getString(array &$ar, int $maxLength = 255, bool $firstRead = false): string
-    {
-        $string = "";
-        $i      = 0;
-        do {
-            $asciiCode = ($firstRead && $i == 0) ? current($ar) : next($ar);
-            if ($asciiCode != 0) {
-                $string .= chr($asciiCode);
-            }
-            $i++;
-        } while ($i < $maxLength && $asciiCode != 0);
-        return $string;
-    }
-
-    /**
-     * @param array<mixed> $ar
-     * @return false|Tag
-     * @throws SmppException
-     */
-    protected function parseTag(array &$ar): false|Tag
-    {
-        $unpackedData = unpack(
-            'nid/nlength',
-            pack("C2C2", next($ar), next($ar), next($ar), next($ar))
-        );
-
-        if (!$unpackedData) {
-            throw new SmppException('Could not read tag data');
-        }
-        /**
-         * Extraction create variables:
-         * @var $length
-         * @var $id
-         */
-        extract($unpackedData);
-
-        // Sometimes SMSC return an extra null byte at the end
-        if (!isset($id, $length) || ($length == 0 && $id == 0)) {
-            return false;
-        }
-
-        $value = $this->getOctets($ar, $length);
-        $tag   = new Tag($id, $value, $length);
-
-        $this->logger->debug("Parsed tag:");
-        $this->logger->debug(" id     :0x" . dechex($tag->id));
-        $this->logger->debug(" length :" . $tag->length);
-        $this->logger->debug(" value  :" . chunk_split(bin2hex((string)$tag->value), 2, " "));
-
-        return $tag;
-    }
-
-    /**
-     * Read a specific number of octets from the char array.
-     * Does not stop at null byte
-     *
-     * @param array<mixed> $ar - input array
-     * @param int $length
-     * @return string
-     */
-    protected function getOctets(array &$ar, int $length): string
-    {
-        $string = "";
-        for ($i = 0; $i < $length; $i++) {
-            $asciiCode = next($ar);
-            if ($asciiCode === false) {
-                return $string;
-            }
-            $string .= chr($asciiCode);
-        }
-        return $string;
     }
 
     /**
