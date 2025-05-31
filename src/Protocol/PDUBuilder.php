@@ -25,17 +25,10 @@ class PDUBuilder
      * @param Pdu $pdu
      * @param int $length
      * @return string
-     * @throws SmppException
      */
     public function packHeader(Pdu $pdu, int $length): string
     {
-        $header = pack("NNNN", $length, $pdu->id, $pdu->status, $pdu->sequence);
-
-        if ($header === false) {
-            throw new SmppException('');
-        }
-
-        return $header;
+        return pack("NNNN", $length, $pdu->id, $pdu->status, $pdu->sequence);
     }
 
     /**
