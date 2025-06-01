@@ -59,6 +59,8 @@ class Tag
     const ITS_REPLY_TYPE              = 0x1380;
     const ITS_SESSION_INFO            = 0x1383;
 
+    private int $length;
+
     /**
      * Construct a new TLV param.
      * The value must either be pre-packed with pack(), or a valid pack-type must be specified.
@@ -69,12 +71,37 @@ class Tag
      * @param string $type (optional)
      */
     public function __construct(
-        public int $id,
-        public string|int $value,
-        public ?int $length = null,
-        public string $type = 'a*'
+        private int $id,
+        private string|int $value,
+        ?int $length = null,
+        private string $type = 'a*'
     )
     {
+        $this->length = $length ?? strlen((string)$this->value);
+    }
+
+    /**
+     * @return int
+     */
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    /**
+     * @return int|string
+     */
+    public function getValue(): int|string
+    {
+        return $this->value;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getLength(): int
+    {
+        return $this->length;
     }
 
     /**
@@ -85,7 +112,7 @@ class Tag
      */
     public function getBinary(): string
     {
-        $binary = pack('nn' . $this->type, $this->id, $this->length ?? strlen((string)$this->value), $this->value);
+        $binary = pack('nn' . $this->type, $this->id, $this->length, $this->value);
         if (!$binary) {
             throw new SmppInvalidArgumentException(
                 'Format string contain errors, please check format: "'

@@ -100,7 +100,7 @@ class PDUParser
     public function parseSms(Pdu $pdu): Sms
     {
         // Unpack PDU
-        $unpackedElements = unpack("C*", $pdu->body);
+        $unpackedElements = unpack("C*", $pdu->getBody());
 
         if (!$unpackedElements) {
             throw new SmppException('Format not matches with PDU body contents');
@@ -148,10 +148,10 @@ class PDUParser
 
         if (($esmClass & Smpp::ESM_DELIVER_SMSC_RECEIPT) != 0) {
             $sms = new DeliveryReceipt(
-                $pdu->id,
-                $pdu->status,
-                $pdu->sequence,
-                $pdu->body,
+                $pdu->getId(),
+                $pdu->getStatus(),
+                $pdu->getSequence(),
+                $pdu->getBody(),
                 $serviceType,
                 $source,
                 $destination,
@@ -166,10 +166,10 @@ class PDUParser
             $sms->parseDeliveryReceipt();
         } else {
             $sms = new Sms(
-                $pdu->id,
-                $pdu->status,
-                $pdu->sequence,
-                $pdu->body,
+                $pdu->getId(),
+                $pdu->getStatus(),
+                $pdu->getSequence(),
+                $pdu->getBody(),
                 $serviceType,
                 $source,
                 $destination,
@@ -237,12 +237,16 @@ class PDUParser
         }
 
         $value = $this->getOctets($ar, $length);
-        $tag   = new Tag($id, $value, $length);
+        $tag   = new Tag(
+            id: $id,
+            value: $value,
+            length: $length
+        );
 
         $this->logger->debug("Parsed tag:");
-        $this->logger->debug(" id     :0x" . dechex($tag->id));
-        $this->logger->debug(" length :" . $tag->length);
-        $this->logger->debug(" value  :" . chunk_split(bin2hex((string)$tag->value), 2, " "));
+        $this->logger->debug(" id     :0x" . dechex($tag->getId()));
+        $this->logger->debug(" length :" . $tag->getLength());
+        $this->logger->debug(" value  :" . chunk_split(bin2hex((string)$tag->getValue()), 2, " "));
 
         return $tag;
     }

@@ -126,46 +126,46 @@ class Client implements SmppClientInterface
     public function queryStatus(string $messageID, Address $source): null|array
     {
         $pduBody = pack(
-            'a' . (strlen($messageID) + 1) . 'cca' . (strlen($source->value) + 1),
+            'a' . (strlen($messageID) + 1) . 'cca' . (strlen($source->getValue()) + 1),
             $messageID,
-            $source->numberType,
-            $source->numberingPlanIndicator,
-            $source->value
+            $source->getNumberType(),
+            $source->getNumberingPlanIndicator(),
+            $source->getValue()
         );
 
         $reply = $this->sendCommand(Command::QUERY_SM, $pduBody);
 
-        if ($reply->status !== Smpp::ESME_ROK) {
+        if ($reply->getStatus() !== Smpp::ESME_ROK) {
             return null;
         }
 
         // Parse reply
-        $posID   = strpos($reply->body, "\0", 0);
-        $posDate = strpos($reply->body, "\0", $posID + 1);
+        $posID   = strpos($reply->getBody(), "\0", 0);
+        $posDate = strpos($reply->getBody(), "\0", $posID + 1);
 
         if ($posID === false) {
             $this->logger->debug(
                 "Invalid response",
                 [
-                    'body hex' => $reply->body,
+                    'body hex' => $reply->getBody(),
                 ]
             );
             throw new SmppException('Invalid response');
         }
 
         $data               = [
-            'message_id' => substr($reply->body, 0, $posID),
-            'final_date' => substr($reply->body, $posID, (int)$posDate - $posID),
+            'message_id' => substr($reply->getBody(), 0, $posID),
+            'final_date' => substr($reply->getBody(), $posID, (int)$posDate - $posID),
         ];
         $data['final_date'] = $data['final_date'] ? $this->parseSmppTime(trim($data['final_date'])) : null;
         /** @var false|array{message_state: mixed, error_code: mixed} $status */
-        $status = unpack("cmessage_state/cerror_code", substr($reply->body, $posDate + 1));
+        $status = unpack("cmessage_state/cerror_code", substr($reply->getBody(), $posDate + 1));
 
         if (!$status) {
             $this->logger->debug(
                 "unable to unpack message_state & error_code",
                 [
-                    'body hex' => $reply->body,
+                    'body hex' => $reply->getBody(),
                 ]
             );
             throw new SmppException('Invalid response');
@@ -190,14 +190,14 @@ class Client implements SmppClientInterface
         }
         $pdu = new Pdu($id, 0, $this->sequenceNumber, $pduBody);
         $this->sendPDU($pdu);
-        $response = $this->readPduResponse($this->sequenceNumber, $pdu->id);
+        $response = $this->readPduResponse($this->sequenceNumber, $pdu->getId());
 
         if ($response === false) {
             throw new SmppException('Failed to read reply to command: 0x' . dechex($id));
         }
 
-        if ($response->status != Smpp::ESME_ROK) {
-            throw new SmppException(Smpp::getStatusMessage($response->status), $response->status);
+        if ($response->getStatus() != Smpp::ESME_ROK) {
+            throw new SmppException(Smpp::getStatusMessage($response->getStatus()), $response->getStatus());
         }
 
         $this->sequenceNumber++;
@@ -242,9 +242,9 @@ class Client implements SmppClientInterface
         for ($i = 0; $i < $queueLength; $i++) {
             $pdu = $this->pduQueue[$i];
             if (
-                ($pdu->sequence == $sequenceNumber && ($pdu->id == $commandID || $pdu->id == Command::GENERIC_NACK))
+                ($pdu->getSequence() == $sequenceNumber && ($pdu->getId() == $commandID || $pdu->getId() == Command::GENERIC_NACK))
                 ||
-                ($pdu->sequence == null && $pdu->id == Command::GENERIC_NACK)
+                ($pdu->getSequence() == null && $pdu->getId() == Command::GENERIC_NACK)
             ) {
                 // remove response pdu from queue
                 array_splice($this->pduQueue, $i, 1);
@@ -257,12 +257,12 @@ class Client implements SmppClientInterface
             $pdu = $this->readPDU();
             if ($pdu) {
                 if (
-                    $pdu->sequence == $sequenceNumber
-                    && ($pdu->id == $commandID || $pdu->id == Command::GENERIC_NACK)
+                    $pdu->getSequence() == $sequenceNumber
+                    && ($pdu->getId() == $commandID || $pdu->getId() == Command::GENERIC_NACK)
                 ) {
                     return $pdu;
                 }
-                if ($pdu->sequence == null && $pdu->id == Command::GENERIC_NACK) {
+                if ($pdu->getSequence() == null && $pdu->getId() == Command::GENERIC_NACK) {
                     return $pdu;
                 }
                 array_push($this->pduQueue, $pdu); // unknown PDU push to queue
@@ -353,7 +353,7 @@ class Client implements SmppClientInterface
 
         $response = $this->sendCommand(Command::UNBIND, "");
 
-        $this->logger->debug("Unbind status   : " . $response->status);
+        $this->logger->debug("Unbind status   : " . $response->getStatus());
 
         $this->transport->close();
     }
@@ -377,7 +377,7 @@ class Client implements SmppClientInterface
 
         $response = $this->bind($login, $pass, Command::BIND_TRANSMITTER);
 
-        $this->logger->debug("Binding status  : " . $response->status);
+        $this->logger->debug("Binding status  : " . $response->getStatus());
 
         $this->mode  = self::MODE_TRANSMITTER;
         $this->login = $login;
@@ -413,8 +413,8 @@ class Client implements SmppClientInterface
         );
 
         $response = $this->sendCommand($commandID, $pduBody);
-        if ($response->status != Smpp::ESME_ROK) {
-            throw new SmppException(Smpp::getStatusMessage($response->status), $response->status);
+        if ($response->getStatus() != Smpp::ESME_ROK) {
+            throw new SmppException(Smpp::getStatusMessage($response->getStatus()), $response->getStatus());
         }
 
         return $response;
@@ -440,7 +440,7 @@ class Client implements SmppClientInterface
 
         $response = $this->bind($login, $pass, Command::BIND_RECEIVER);
 
-        $this->logger->debug("Binding status  : " . $response->status);
+        $this->logger->debug("Binding status  : " . $response->getStatus());
 
         $this->mode  = self::MODE_RECEIVER;
         $this->login = $login;
@@ -467,7 +467,7 @@ class Client implements SmppClientInterface
 
         $response = $this->bind($login, $pass, Command::BIND_TRANSCEIVER);
 
-        $this->logger->debug("Binding status  : " . $response->status);
+        $this->logger->debug("Binding status  : " . $response->getStatus());
 
         $this->mode  = self::MODE_TRANSCEIVER;
         $this->login = $login;
@@ -565,7 +565,7 @@ class Client implements SmppClientInterface
         $queueLength = count($this->pduQueue);
         for ($i = 0; $i < $queueLength; $i++) {
             $pdu = $this->pduQueue[$i];
-            if ($pdu->id === Command::DELIVER_SM) {
+            if ($pdu->getId() === Command::DELIVER_SM) {
                 //remove response
                 array_splice($this->pduQueue, $i, 1);
                 return $this->parseSMS($pdu);
@@ -578,13 +578,13 @@ class Client implements SmppClientInterface
                 return false;
             } // TSocket v. 0.6.0+ returns false on timeout
             //check for enquire link command
-            if ($pdu->id === Command::ENQUIRE_LINK) {
-                $response = new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
+            if ($pdu->getId() === Command::ENQUIRE_LINK) {
+                $response = new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->getSequence(), "\x00");
                 $this->sendPDU($response);
-            } else if ($pdu->id !== Command::DELIVER_SM) { // if this is not the correct PDU add to queue
+            } else if ($pdu->getId() !== Command::DELIVER_SM) { // if this is not the correct PDU add to queue
                 array_push($this->pduQueue, $pdu);
             }
-        } while ($pdu->id !== Command::DELIVER_SM);
+        } while ($pdu->getId() !== Command::DELIVER_SM);
 
         return $this->parseSMS($pdu);
     }
@@ -600,7 +600,7 @@ class Client implements SmppClientInterface
     protected function parseSMS(Pdu $pdu): DeliveryReceipt|Sms
     {
         // Check command id
-        if ($pdu->id != Command::DELIVER_SM) {
+        if ($pdu->getId() != Command::DELIVER_SM) {
             throw new SmppInvalidArgumentException('PDU is not an received SMS');
         }
 
@@ -609,7 +609,7 @@ class Client implements SmppClientInterface
         $this->logger->debug("Received sms:\n" . print_r($sms, true));
 
         // Send response of receiving sms
-        $response = new Pdu(Command::DELIVER_SM_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00");
+        $response = new Pdu(Command::DELIVER_SM_RESP, Smpp::ESME_ROK, $pdu->getSequence(), "\x00");
         $this->sendPDU($response);
         return $sms;
     }
@@ -856,17 +856,17 @@ class Client implements SmppClientInterface
         $shortMessageLength = strlen($shortMessage);
         // Construct PDU with mandatory fields
         $pdu = pack(
-            'a1cca' . (strlen($source->value) + 1)
-            . 'cca' . (strlen($destination->value) + 1)
+            'a1cca' . (strlen($source->getValue()) + 1)
+            . 'cca' . (strlen($destination->getValue()) + 1)
             . 'ccc' . ($scheduleDeliveryTime ? 'a16x' : 'a1') . ($validityPeriod ? 'a16x' : 'a1')
             . 'ccccca' . ($shortMessageLength + (int)$this->config->isSmsNullTerminateOctetstrings()),
             $this->config->getSmsServiceType(),
-            $source->numberType,
-            $source->numberingPlanIndicator,
-            $source->value,
-            $destination->numberType,
-            $destination->numberingPlanIndicator,
-            $destination->value,
+            $source->getNumberType(),
+            $source->getNumberingPlanIndicator(),
+            $source->getValue(),
+            $destination->getNumberType(),
+            $destination->getNumberingPlanIndicator(),
+            $destination->getValue(),
             $esmClass,
             $this->config->getSmsProtocolID(),
             $priority,
@@ -889,9 +889,9 @@ class Client implements SmppClientInterface
 
         $response = $this->sendCommand(Command::SUBMIT_SM, $pdu);
         /** @var array{msgid: string}|false $body */
-        $body = unpack("a*msgid", $response->body);
+        $body = unpack("a*msgid", $response->getBody());
         if (!$body) {
-            throw new SmppException('unable to unpack response body:' . $response->body);
+            throw new SmppException('unable to unpack response body:' . $response->getBody());
         }
         return $body['msgid'];
     }
@@ -932,6 +932,7 @@ class Client implements SmppClientInterface
      * Then it will move on to the transport, and if the first PDU is enquire link respond,
      * otherwise add it to the queue and return.
      *
+     * @throws Exception
      */
     public function respondEnquireLink(): void
     {
@@ -939,18 +940,18 @@ class Client implements SmppClientInterface
         $queueLength = count($this->pduQueue);
         for ($i = 0; $i < $queueLength; $i++) {
             $pdu = $this->pduQueue[$i];
-            if ($pdu->id == Command::ENQUIRE_LINK) {
+            if ($pdu->getId() == Command::ENQUIRE_LINK) {
                 //remove response
                 array_splice($this->pduQueue, $i, 1);
-                $this->sendPDU(new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00"));
+                $this->sendPDU(new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->getSequence(), "\x00"));
             }
         }
 
         // Check the transport for data
         if ($this->transport->hasData()) {
             $pdu = $this->readPDU();
-            if ($pdu && $pdu->id == Command::ENQUIRE_LINK) {
-                $this->sendPDU(new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->sequence, "\x00"));
+            if ($pdu && $pdu->getId() == Command::ENQUIRE_LINK) {
+                $this->sendPDU(new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->getSequence(), "\x00"));
             } elseif ($pdu) {
                 array_push($this->pduQueue, $pdu);
             }

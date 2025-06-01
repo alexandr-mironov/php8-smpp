@@ -6,6 +6,7 @@ namespace Smpp;
 
 use InvalidArgumentException;
 use Smpp\Exceptions\SmppException;
+use Smpp\Exceptions\SmppInvalidArgumentException;
 
 /**
  * An extension of a SMS, with data embedded into the message part of the SMS.
@@ -13,13 +14,13 @@ use Smpp\Exceptions\SmppException;
  */
 class DeliveryReceipt extends Sms
 {
-    public int $id;
-    public int $sub;
-    public int $dlvrd;
-    public int $submitDate;
-    public int $doneDate;
+    public int    $id;
+    public int    $sub;
+    public int    $dlvrd;
+    public int    $submitDate;
+    public int    $doneDate;
     public string $stat;
-    public int $err;
+    public int    $err;
     public string $text;
 
     /**
@@ -27,6 +28,7 @@ class DeliveryReceipt extends Sms
      * It accepts all chars except space as the message id
      *
      * @throws InvalidArgumentException
+     * @throws SmppException
      */
     public function parseDeliveryReceipt(): void
     {
@@ -36,13 +38,14 @@ class DeliveryReceipt extends Sms
             $matches
         );
         if ($numMatches === 0) {
-            throw new InvalidArgumentException(
+            throw new SmppInvalidArgumentException(
                 'Could not parse delivery receipt: '
                 . $this->message
                 . "\n"
                 . bin2hex($this->body)
             );
         }
+
         [
             $matched,
             $this->id,
@@ -56,9 +59,14 @@ class DeliveryReceipt extends Sms
         ] = $matches;
 
         $this->submitDate = $this->convertDate($submitDate);
-        $this->doneDate = $this->convertDate($doneDate);
+        $this->doneDate   = $this->convertDate($doneDate);
     }
 
+    /**
+     * @param string $date
+     * @return int
+     * @throws SmppException
+     */
     private function convertDate(string $date): int
     {
         $dateParts = str_split($date, 2);
