@@ -97,7 +97,7 @@ class Tag
     }
 
     /**
-     * @return int|null
+     * @return int
      */
     public function getLength(): int
     {
