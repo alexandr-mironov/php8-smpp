@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Smpp;
+namespace Smpp\Pdu;
+
+use Smpp\Contracts\Pdu\PduInterface;
 
 /**
  * PDU - is Protocol Data Unit
  * Primitive class for encapsulating PDUs
- * @package smpp
  */
-class Pdu
+class Pdu implements PduInterface
 {
     /**
      * Create new generic PDU object
@@ -53,10 +54,10 @@ class Pdu
     }
 
     /**
-     * @return string|null
+     * @return string
      */
-    public function getBody(): ?string
+    public function getBody(): string
     {
-        return $this->body;
+        return (string)$this->body;
     }
 }

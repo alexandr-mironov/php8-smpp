@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Smpp;
+namespace Smpp\Pdu;
+
+use Smpp\Tag;
 
 /**
  * Class Sms

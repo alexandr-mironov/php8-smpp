@@ -8,10 +8,8 @@ namespace Smpp\Contracts\Pdu;
 
 interface PduInterface
 {
-    public function getCommandId(): int;
+    public function getId(): int;
     public function getSequence(): int;
     public function getStatus(): int;
     public function getBody(): string;
-    public function toBinary(): string;
-    public function getCommandName(): string;
 }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Smpp;
+namespace Smpp\Pdu;
 
 use InvalidArgumentException;
 use Smpp\Exceptions\SmppException;

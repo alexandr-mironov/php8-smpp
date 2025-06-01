@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Smpp\Protocol;
 
 use Psr\Log\LoggerInterface;
-use Smpp\Address;
-use Smpp\DeliveryReceipt;
 use Smpp\Exceptions\PDUParseException;
 use Smpp\Exceptions\SmppException;
 use Smpp\Exceptions\SmppInvalidArgumentException;
-use Smpp\Pdu;
+use Smpp\Pdu\Address;
+use Smpp\Pdu\DeliveryReceipt;
+use Smpp\Pdu\Pdu;
 use Smpp\Pdu\PDUHeader;
+use Smpp\Pdu\Sms;
+use Smpp\Pdu\Tag;
 use Smpp\Smpp;
-use Smpp\Sms;
-use Smpp\Tag;
 
 class PDUParser
 {

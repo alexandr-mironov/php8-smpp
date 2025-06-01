@@ -17,7 +17,12 @@ use Smpp\Exceptions\ClosedTransportException;
 use Smpp\Exceptions\SmppException;
 use Smpp\Exceptions\SmppInvalidArgumentException;
 use Smpp\Exceptions\SocketTransportException;
+use Smpp\Pdu\Address;
+use Smpp\Pdu\DeliveryReceipt;
+use Smpp\Pdu\Pdu;
 use Smpp\Pdu\PDUHeader;
+use Smpp\Pdu\Sms;
+use Smpp\Pdu\Tag;
 use Smpp\Protocol\Command;
 use Smpp\Protocol\PDUBuilder;
 use Smpp\Protocol\PDUParser;
@@ -241,11 +246,7 @@ class Client implements SmppClientInterface
         $queueLength = count($this->pduQueue);
         for ($i = 0; $i < $queueLength; $i++) {
             $pdu = $this->pduQueue[$i];
-            if (
-                ($pdu->getSequence() == $sequenceNumber && ($pdu->getId() == $commandID || $pdu->getId() == Command::GENERIC_NACK))
-                ||
-                ($pdu->getSequence() == null && $pdu->getId() == Command::GENERIC_NACK)
-            ) {
+            if ($this->isExpectedResponse($pdu, $sequenceNumber, $commandID)) {
                 // remove response pdu from queue
                 array_splice($this->pduQueue, $i, 1);
                 return $pdu;
@@ -256,19 +257,27 @@ class Client implements SmppClientInterface
         do {
             $pdu = $this->readPDU();
             if ($pdu) {
-                if (
-                    $pdu->getSequence() == $sequenceNumber
-                    && ($pdu->getId() == $commandID || $pdu->getId() == Command::GENERIC_NACK)
-                ) {
-                    return $pdu;
-                }
-                if ($pdu->getSequence() == null && $pdu->getId() == Command::GENERIC_NACK) {
+                if ($this->isExpectedResponse($pdu, $sequenceNumber, $commandID)) {
                     return $pdu;
                 }
                 array_push($this->pduQueue, $pdu); // unknown PDU push to queue
             }
         } while ($pdu);
+
         return false;
+    }
+
+    /**
+     * @param Pdu $pdu
+     * @param int $sequenceNumber
+     * @param int $commandID
+     *
+     * @return bool
+     */
+    private function isExpectedResponse(Pdu $pdu, int $sequenceNumber, int $commandID): bool
+    {
+        return $pdu->getSequence() === $sequenceNumber
+            && ($pdu->getId() === $commandID || $pdu->getId() === Command::GENERIC_NACK);
     }
 
     /**

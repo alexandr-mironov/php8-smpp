@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Smpp\Protocol;
 
 use Psr\Log\LoggerInterface;
-use Smpp\Pdu;
 use Smpp\Pdu\BinaryPDU;
+use Smpp\Pdu\Pdu;
 use Smpp\Pdu\PDUHeader;
 
 class PDUBuilder
@@ -16,16 +16,6 @@ class PDUBuilder
     )
     {
 
-    }
-
-    /**
-     * @param Pdu $pdu
-     * @param int $length
-     * @return string
-     */
-    public function packHeader(Pdu $pdu, int $length): string
-    {
-        return pack("NNNN", $length, $pdu->getId(), $pdu->getStatus(), $pdu->getSequence());
     }
 
     /**
@@ -47,5 +37,15 @@ class PDUBuilder
             data: $datagram,
             length: $length
         );
+    }
+
+    /**
+     * @param Pdu $pdu
+     * @param int $length
+     * @return string
+     */
+    public function packHeader(Pdu $pdu, int $length): string
+    {
+        return pack("NNNN", $length, $pdu->getId(), $pdu->getStatus(), $pdu->getSequence());
     }
 }
