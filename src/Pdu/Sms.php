@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Smpp\Pdu;
 
-use Smpp\Tag;
-
 /**
  * Class Sms
  * @package smpp
