@@ -9,6 +9,7 @@ use DateTime;
 use Exception;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Smpp\Configs\SmppConfig;
 use Smpp\Contracts\Client\SmppClientInterface;
 use Smpp\Contracts\Middlewares\MiddlewareInterface;
 use Smpp\Contracts\Pdu\PduInterface;

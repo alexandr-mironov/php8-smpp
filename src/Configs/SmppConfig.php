@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 
-namespace Smpp;
+namespace Smpp\Configs;
 
 
 use Smpp\Contracts\ValidatorInterface;
 use Smpp\Exceptions\SmppException;
+use Smpp\Smpp;
 use Smpp\Validators\AddressRangeValidator;
 use Smpp\Validators\NumberingPlanIndicatorValidator;
 use Smpp\Validators\TypeOfNumberValidator;
