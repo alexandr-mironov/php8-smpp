@@ -42,7 +42,7 @@ class DeliveryReceipt extends Sms
                 'Could not parse delivery receipt: '
                 . $this->message
                 . "\n"
-                . bin2hex($this->body)
+                . bin2hex($this->getBody())
             );
         }
 

@@ -133,17 +133,16 @@ class PDUParser
         $sm_length = next($unpackedElements);
         $message   = $this->getString($unpackedElements, $sm_length);
 
+        $tags = [];
+
         // Check for optional params, and parse them
         if (current($unpackedElements) !== false) {
-            $tags = [];
             do {
                 $tag = $this->parseTag($unpackedElements);
                 if ($tag !== false) {
                     $tags[] = $tag;
                 }
             } while (current($unpackedElements) !== false);
-        } else {
-            $tags = null;
         }
 
         if (($esmClass & Smpp::ESM_DELIVER_SMSC_RECEIPT) != 0) {
@@ -200,7 +199,7 @@ class PDUParser
         $string = "";
         $i      = 0;
         do {
-            $asciiCode = ($firstRead && $i == 0) ? current($ar) : next($ar);
+            $asciiCode = (int)(($firstRead && $i == 0) ? current($ar) : next($ar));
             if ($asciiCode != 0) {
                 $string .= chr($asciiCode);
             }
@@ -263,7 +262,7 @@ class PDUParser
     {
         $string = "";
         for ($i = 0; $i < $length; $i++) {
-            $asciiCode = next($ar);
+            $asciiCode = (int)next($ar);
             if ($asciiCode === false) {
                 return $string;
             }

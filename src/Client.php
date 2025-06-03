@@ -804,7 +804,7 @@ class Client implements SmppClientInterface
 
                 // Split the message char-by-char
                 $parts = [];
-                $part  = null;
+                $part  = "";
                 $n     = 0;
                 for ($i = 0; $i < $messageLength; $i++) {
                     $c = $message[$i];
@@ -812,7 +812,7 @@ class Client implements SmppClientInterface
                     if ($n == $chunkSize || ($n == ($chunkSize - 1) && $c == "\x1B")) {
                         $parts[] = $part;
                         $n       = 0;
-                        $part    = null;
+                        $part    = "";
                     }
                     $part .= $c;
                 }
@@ -863,7 +863,7 @@ class Client implements SmppClientInterface
             $esmClass = $this->config->getSmsEsmClass();
         }
 
-        $shortMessageLength = strlen($shortMessage);
+        $shortMessageLength = strlen((string)$shortMessage);
         // Construct PDU with mandatory fields
         $pdu = pack(
             'a1cca' . (strlen($source->getValue()) + 1)
