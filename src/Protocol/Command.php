@@ -16,6 +16,8 @@ namespace Smpp\Protocol;
  */
 class Command
 {
+    public const GENERIC_NACK          = 0x80000000;
+
     public const BIND_RECEIVER         = 0x00000001;
     public const BIND_RECEIVER_RESP    = 0x80000001;
 
@@ -48,6 +50,11 @@ class Command
     public const ENQUIRE_LINK          = 0x00000015;
     public const ENQUIRE_LINK_RESP     = 0x80000015;
 
-    public const GENERIC_NACK          = 0x80000000;
+    public const SUBMIT_MULTI          = 0x00000021;
+    public const SUBMIT_MULTI_RESP     = 0x80000021;
 
+    public const ALERT_NOTIFICATION    = 0x00000102;
+
+    public const DATA_SM               = 0x00000103;
+    public const DATA_SM_RESP          = 0x80000103;
 }
