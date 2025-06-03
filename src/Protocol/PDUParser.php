@@ -199,7 +199,10 @@ class PDUParser
         $string = "";
         $i      = 0;
         do {
-            $asciiCode = (int)(($firstRead && $i == 0) ? current($ar) : next($ar));
+            /**
+             * @var int|false $asciiCode
+             */
+            $asciiCode = ($firstRead && $i == 0) ? current($ar) : next($ar);
             if ($asciiCode != 0) {
                 $string .= chr($asciiCode);
             }
@@ -262,7 +265,10 @@ class PDUParser
     {
         $string = "";
         for ($i = 0; $i < $length; $i++) {
-            $asciiCode = (int)next($ar);
+            /**
+             * @var false|int $asciiCode
+             */
+            $asciiCode = next($ar);
             if ($asciiCode === false) {
                 return $string;
             }
