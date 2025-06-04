@@ -1,13 +1,18 @@
 # php8-smpp
 SMPP Client (v 3.4) on PHP8
 
+[![phpstan](https://badgen.net/github/checks/alexandr-mironov/php8-smpp/main/PHPStan)]()
+[![stars](https://badgen.net/github/stars/alexandr-mironov/php8-smpp/)]()
+[![forks](https://badgen.net/github/forks/alexandr-mironov/php8-smpp/)]()
+[![open-issues](https://badgen.net/github/open-issues/alexandr-mironov/php8-smpp/)]()
+
 # ATTENTION!
 ## In development! Not production ready!
 
 SMPP documentation [here](https://smpp.org/SMPP_v3_4_Issue1_2.pdf)
 
 ____
-# readme below from https://github.com/alexandr-mironov/php-smpp 
+## readme below from https://github.com/alexandr-mironov/php-smpp 
 
 PHP SMPP (v3.4) client
 ====
