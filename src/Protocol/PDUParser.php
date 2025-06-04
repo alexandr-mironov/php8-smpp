@@ -203,11 +203,11 @@ class PDUParser
              * @var int|false $asciiCode
              */
             $asciiCode = ($firstRead && $i == 0) ? current($ar) : next($ar);
-            if ($asciiCode != 0) {
+            if ($asciiCode) {
                 $string .= chr($asciiCode);
             }
             $i++;
-        } while ($i < $maxLength && $asciiCode != 0);
+        } while ($i < $maxLength && $asciiCode);
         return $string;
     }
 

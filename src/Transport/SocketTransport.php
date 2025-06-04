@@ -93,6 +93,10 @@ class SocketTransport
     {
         $i = 0;
         foreach ($hosts as $host) {
+            /**
+             * @var string $hostname
+             * @var int|string $port
+             */
             [$hostname, $port] = $host;
             $ip4s = [];
             $ip6s = [];
