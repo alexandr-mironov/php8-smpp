@@ -26,10 +26,10 @@ use Socket;
 class SocketTransport
 {
     /**
-     * @var Socket|null instance of Socket (since PHP 8)
+     * @var Socket instance of Socket (since PHP 8)
      * @see https://www.php.net/manual/ru/class.socket.php
      */
-    protected ?Socket $socket = null;
+    protected Socket $socket;
 
     /** @var array<mixed> */
     protected array $hosts;
@@ -92,6 +92,9 @@ class SocketTransport
     protected function resolveHosts(array $hosts): void
     {
         $i = 0;
+        /**
+         * @var array<0: string, 1: int|string> $host
+         */
         foreach ($hosts as $host) {
             /**
              * @var string $hostname
@@ -197,7 +200,7 @@ class SocketTransport
      * Set an arbitrary option
      *
      * @param integer $option
-     * @param mixed $value
+     * @param array|int|string $value
      * @param integer $level
      * @return bool
      */
