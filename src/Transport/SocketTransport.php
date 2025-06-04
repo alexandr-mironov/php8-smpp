@@ -485,14 +485,14 @@ class SocketTransport
                     socket_last_error()
                 );
             }
-
+            /** @var Socket[] $except */
             if (!empty($except)) {
                 throw new SocketTransportException(
                     'Socket exception while waiting for data; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
-
+            /** @var Socket[] $read */
             if (empty($read)) {
                 throw new SocketTransportException('Timed out waiting for data on socket');
             }
