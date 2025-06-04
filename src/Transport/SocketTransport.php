@@ -93,7 +93,7 @@ class SocketTransport
     {
         $i = 0;
         /**
-         * @var array<0: string, 1: int|string> $host
+         * @var array{0: string, 1: int|string} $host
          */
         foreach ($hosts as $host) {
             /**
@@ -200,7 +200,7 @@ class SocketTransport
      * Set an arbitrary option
      *
      * @param integer $option
-     * @param array|int|string $value
+     * @param array<mixed>|int|string $value
      * @param integer $level
      * @return bool
      */
@@ -326,12 +326,17 @@ class SocketTransport
         }
         $it = new ArrayIterator($this->hosts);
         while ($it->valid()) {
+            /**
+             * @var int|string $port
+             * @var string[] $ip6s
+             * @var string[] $ip4s
+             */
             [$hostname, $port, $ip6s, $ip4s] = $it->current();
             if (!$this->config->isForceIpv4() && !empty($ip6s) && isset($socket6)) { // Attempt IPv6s first
                 foreach ($ip6s as $ip) {
                     $this->logger->debug("Connecting to $ip:$port...");
                     /** @var Socket $socket6 */
-                    $result = @socket_connect($socket6, $ip, $port);
+                    $result = @socket_connect($socket6, $ip, (int)$port);
                     if ($result) {
                         $this->logger->debug("Connected to $ip:$port!");
                         if (isset($socket4) && $socket4 instanceof Socket) {
