@@ -1,8 +1,11 @@
 parameters:
-  bootstrapFiles:
-    - vendor/autoload.php
-  level: max
-  paths:
-    - src
-    - tests
-  checkGenericClassInNonGenericObjectType: false
+    phpVersion: 80000
+        featureToggles:
+            detectPhpVersionId: true
+    bootstrapFiles:
+        - vendor/autoload.php
+    level: max
+    paths:
+        - src
+        - tests
+    checkGenericClassInNonGenericObjectType: false

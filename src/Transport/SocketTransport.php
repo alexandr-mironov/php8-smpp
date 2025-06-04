@@ -325,7 +325,7 @@ class SocketTransport
             socket_set_option($socket4, SOL_SOCKET, SO_RCVTIMEO, $receiveTimeout);
         }
         /**
-         * @var array{0: string, 1: int|string, 2: array, 3: array} $host
+         * @var array{0: string, 1: int|string, 2: string[], 3: string[]} $host
          */
         foreach ($this->hosts as $host) {
             /**
