@@ -1,7 +1,7 @@
 parameters:
     phpVersion: 80000
-        featureToggles:
-            detectPhpVersionId: true
+    featureToggles:
+        detectPhpVersionId: true
     bootstrapFiles:
         - vendor/autoload.php
     level: max
