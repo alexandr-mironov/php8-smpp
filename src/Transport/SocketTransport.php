@@ -407,6 +407,7 @@ class SocketTransport
             );
         }
 
+        /** @var Socket[] $read */
         return !empty($read);
     }
 
@@ -544,14 +545,14 @@ class SocketTransport
                     socket_last_error()
                 );
             }
-
+            /** @var Socket[] $except */
             if (!empty($except)) {
                 throw new SocketTransportException(
                     'Socket exception while waiting to write data; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
-
+            /** @var Socket[] $write */
             if (empty($write)) {
                 throw new SocketTransportException('Timed out waiting to write data on socket');
             }
