@@ -324,14 +324,16 @@ class SocketTransport
             socket_set_option($socket4, SOL_SOCKET, SO_SNDTIMEO, $sendTimeout);
             socket_set_option($socket4, SOL_SOCKET, SO_RCVTIMEO, $receiveTimeout);
         }
-        $it = new ArrayIterator($this->hosts);
-        while ($it->valid()) {
+        /**
+         * @var array{0: string, 1: int|string, 2: array, 3: array} $host
+         */
+        foreach ($this->hosts as $host) {
             /**
              * @var int|string $port
              * @var string[] $ip6s
              * @var string[] $ip4s
              */
-            [$hostname, $port, $ip6s, $ip4s] = $it->current();
+            [$hostname, $port, $ip6s, $ip4s] = $host;
             if (!$this->config->isForceIpv4() && !empty($ip6s) && isset($socket6)) { // Attempt IPv6s first
                 foreach ($ip6s as $ip) {
                     $this->logger->debug("Connecting to $ip:$port...");
@@ -356,7 +358,7 @@ class SocketTransport
                 foreach ($ip4s as $ip) {
                     $this->logger->debug("Connecting to $ip:$port...");
                     /** @var Socket $socket4 */
-                    $result = @socket_connect($socket4, $ip, $port);
+                    $result = @socket_connect($socket4, $ip, (int)$port);
                     if ($result) {
                         $this->logger->debug("Connected to $ip:$port!");
                         if (isset($socket6) && $socket6 instanceof Socket) {
@@ -372,7 +374,6 @@ class SocketTransport
                     }
                 }
             }
-            $it->next();
         }
         throw new SocketTransportException('Could not connect to any of the specified hosts');
     }
@@ -396,9 +397,6 @@ class SocketTransport
      */
     public function hasData(): bool
     {
-        if ($this->socket === null) {
-            throw new SocketTransportException('Socket is null');
-        }
         $read   = [$this->socket];
         $write  = null;
         $except = null;
@@ -409,7 +407,6 @@ class SocketTransport
             );
         }
 
-        /** @var Socket[] $read */
         return !empty($read);
     }
 
@@ -450,9 +447,6 @@ class SocketTransport
      */
     public function readAll(int $length): string
     {
-        if ($this->socket === null) {
-            throw new SocketTransportException('Socket is null');
-        }
         $datagram = "";
         $r        = 0;
         /**
@@ -490,14 +484,14 @@ class SocketTransport
                     socket_last_error()
                 );
             }
-            /** @var Socket[] $except */
+
             if (!empty($except)) {
                 throw new SocketTransportException(
                     'Socket exception while waiting for data; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
-            /** @var Socket[] $read */
+
             if (empty($read)) {
                 throw new SocketTransportException('Timed out waiting for data on socket');
             }
@@ -513,13 +507,9 @@ class SocketTransport
      *
      * @param string $buffer
      * @param integer $length
-     * @throws SmppException
      */
     public function write(string $buffer, int $length): void
     {
-        if ($this->socket === null) {
-            throw new SocketTransportException('Socket is null');
-        }
         $r = $length;
         /** @var false|array{sec: int, usec: int} $writeTimeout */
         $writeTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_SNDTIMEO);
@@ -554,14 +544,14 @@ class SocketTransport
                     socket_last_error()
                 );
             }
-            /** @var Socket[] $except */
+
             if (!empty($except)) {
                 throw new SocketTransportException(
                     'Socket exception while waiting to write data; ' . socket_strerror(socket_last_error()),
                     socket_last_error()
                 );
             }
-            /** @var Socket[] $write */
+
             if (empty($write)) {
                 throw new SocketTransportException('Timed out waiting to write data on socket');
             }
