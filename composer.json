@@ -1,19 +1,19 @@
 {
-    "name": "alexandr-mironov/php8-smpp",
-    "description": "PHP SMPP client lib, based on fork of onlinecity/php-smpp",
+    "name": "php8-smpp/php8-smpp",
+    "description": "PHP8 SMPP client lib, based on fork of alexandr-mironov/php-smpp which is fork of onlinecity/php-smpp",
     "keywords": [
         "smpp",
         "sms",
         "texting",
         "gsm"
     ],
-    "homepage": "https://github.com/alexandr-mironov/php8-smpp",
+    "homepage": "https://github.com/php8-smpp/php8-smpp",
     "type": "library",
     "license": "LGPL-2.0-or-later",
     "authors": [
         {
             "name": "Alexandr Mironov",
-            "email": "alex@hyptrex.com"
+            "email": "alex@htrex.com"
         }
     ],
     "require": {
