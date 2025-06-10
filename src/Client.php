@@ -19,6 +19,7 @@ use Smpp\Exceptions\SmppException;
 use Smpp\Exceptions\SmppInvalidArgumentException;
 use Smpp\Exceptions\SocketTransportException;
 use Smpp\Pdu\Address;
+use Smpp\Pdu\BinaryPDU;
 use Smpp\Pdu\DeliveryReceipt;
 use Smpp\Pdu\Pdu;
 use Smpp\Pdu\PDUHeader;
@@ -225,6 +226,11 @@ class Client implements SmppClientInterface
     {
         $binaryPdu = $this->builder->packPdu($pdu);
         $this->transport->write($binaryPdu->getData(), $binaryPdu->getLength());
+    }
+
+    protected function sendBinaryPdu(BinaryPDU $pdu): void
+    {
+        $this->transport->write($pdu->getData(), $pdu->getLength());
     }
 
     /**
@@ -953,7 +959,7 @@ class Client implements SmppClientInterface
             if ($pdu->getId() == Command::ENQUIRE_LINK) {
                 //remove response
                 array_splice($this->pduQueue, $i, 1);
-                $this->sendPDU(new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->getSequence(), "\x00"));
+                $this->sendEnquireLinkResponse($pdu->getSequence());
             }
         }
 
@@ -961,11 +967,20 @@ class Client implements SmppClientInterface
         if ($this->transport->hasData()) {
             $pdu = $this->readPDU();
             if ($pdu && $pdu->getId() == Command::ENQUIRE_LINK) {
-                $this->sendPDU(new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->getSequence(), "\x00"));
+                $this->sendEnquireLinkResponse($pdu->getSequence());
             } elseif ($pdu) {
                 array_push($this->pduQueue, $pdu);
             }
         }
+    }
+
+    /**
+     * @param int $sequence
+     * @throws Exception
+     */
+    private function sendEnquireLinkResponse(int $sequence): void
+    {
+        $this->sendBinaryPdu($this->builder->getEnquireLinkResponse($sequence));
     }
 
     /**

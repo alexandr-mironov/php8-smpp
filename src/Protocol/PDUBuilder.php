@@ -8,6 +8,7 @@ use Psr\Log\LoggerInterface;
 use Smpp\Pdu\BinaryPDU;
 use Smpp\Pdu\Pdu;
 use Smpp\Pdu\PDUHeader;
+use Smpp\Smpp;
 
 class PDUBuilder
 {
@@ -16,6 +17,11 @@ class PDUBuilder
     )
     {
 
+    }
+
+    public function getEnquireLinkResponse(int $sequence): BinaryPDU
+    {
+        return $this->packPdu(new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $sequence, "\x00"));
     }
 
     /**
