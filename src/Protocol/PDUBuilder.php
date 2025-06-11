@@ -21,7 +21,7 @@ class PDUBuilder
 
     public function getEnquireLinkResponse(int $sequence): BinaryPDU
     {
-        return $this->packPdu(new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $sequence, "\x00"));
+        return $this->packPdu(new Pdu(Command::ENQUIRE_LINK_RESP, CommandStatus::ESME_ROK, $sequence, "\x00"));
     }
 
     /**

@@ -26,6 +26,7 @@ use Smpp\Pdu\PDUHeader;
 use Smpp\Pdu\Sms;
 use Smpp\Pdu\Tag;
 use Smpp\Protocol\Command;
+use Smpp\Protocol\CommandStatus;
 use Smpp\Protocol\PDUBuilder;
 use Smpp\Protocol\PDUParser;
 use Smpp\Transport\SocketTransport;
@@ -142,7 +143,7 @@ class Client implements SmppClientInterface
 
         $reply = $this->sendCommand(Command::QUERY_SM, $pduBody);
 
-        if ($reply->getStatus() !== Smpp::ESME_ROK) {
+        if ($reply->getStatus() !== CommandStatus::ESME_ROK) {
             return null;
         }
 
@@ -203,8 +204,8 @@ class Client implements SmppClientInterface
             throw new SmppException('Failed to read reply to command: 0x' . dechex($id));
         }
 
-        if ($response->getStatus() != Smpp::ESME_ROK) {
-            throw new SmppException(Smpp::getStatusMessage($response->getStatus()), $response->getStatus());
+        if ($response->getStatus() != CommandStatus::ESME_ROK) {
+            throw new SmppException(CommandStatus::getStatusMessageByCode($response->getStatus()), $response->getStatus());
         }
 
         $this->sequenceNumber++;
@@ -320,7 +321,7 @@ class Client implements SmppClientInterface
         $this->logger->debug(" command status  : 0x"
             . dechex($pduHeader->getCommandStatus())
             . " "
-            . Smpp::getStatusMessage($pduHeader->getCommandStatus())
+            . CommandStatus::getStatusMessageByCode($pduHeader->getCommandStatus())
         );
         $this->logger->debug(' sequence number : ' . $pduHeader->getSequenceNumber());
 
@@ -429,8 +430,8 @@ class Client implements SmppClientInterface
         );
 
         $response = $this->sendCommand($commandID, $pduBody);
-        if ($response->getStatus() != Smpp::ESME_ROK) {
-            throw new SmppException(Smpp::getStatusMessage($response->getStatus()), $response->getStatus());
+        if ($response->getStatus() != CommandStatus::ESME_ROK) {
+            throw new SmppException(CommandStatus::getStatusMessageByCode($response->getStatus()), $response->getStatus());
         }
 
         return $response;
@@ -595,7 +596,7 @@ class Client implements SmppClientInterface
             } // TSocket v. 0.6.0+ returns false on timeout
             //check for enquire link command
             if ($pdu->getId() === Command::ENQUIRE_LINK) {
-                $response = new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->getSequence(), "\x00");
+                $response = new Pdu(Command::ENQUIRE_LINK_RESP, CommandStatus::ESME_ROK, $pdu->getSequence(), "\x00");
                 $this->sendPDU($response);
             } else if ($pdu->getId() !== Command::DELIVER_SM) { // if this is not the correct PDU add to queue
                 array_push($this->pduQueue, $pdu);
@@ -625,7 +626,7 @@ class Client implements SmppClientInterface
         $this->logger->debug("Received sms:\n" . print_r($sms, true));
 
         // Send response of receiving sms
-        $response = new Pdu(Command::DELIVER_SM_RESP, Smpp::ESME_ROK, $pdu->getSequence(), "\x00");
+        $response = new Pdu(Command::DELIVER_SM_RESP, CommandStatus::ESME_ROK, $pdu->getSequence(), "\x00");
         $this->sendPDU($response);
         return $sms;
     }
