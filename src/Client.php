@@ -307,7 +307,7 @@ class Client implements SmppClientInterface
         // Read PDU body
         $body = null;
         if ($bodyLength > 0) {
-            // if body not empty read them from socket
+            // if body is not empty, read them from the socket
             $body = $this->transport->readAll($bodyLength);
             if (strlen($body) === 0) {
                 throw new SmppException('Could not read PDU body');
@@ -334,7 +334,7 @@ class Client implements SmppClientInterface
 
     /**
      * Reconnect to SMSC.
-     * This is mostly to deal with the situation were we run out of sequence numbers
+     * This is mainly to deal with the situation where we run out of sequence numbers
      *
      * @throws SmppException|Exception
      */
@@ -375,7 +375,7 @@ class Client implements SmppClientInterface
     }
 
     /**
-     * Binds the transmitter. One object can be bound only as receiver or only as transmitter.
+     * Binds the transmitter. One object can be bound only as a receiver or only as a transmitter.
      *
      * @param string $login - ESME system_id
      * @param string $pass - ESME password
@@ -437,7 +437,7 @@ class Client implements SmppClientInterface
     }
 
     /**
-     * Binds the receiver. One object can be bound only as receiver or only as transmitter.
+     * Binds the receiver. One object can be bound only as a receiver or only as a transmitter.
      * @param string $login - ESME system_id
      * @param string $pass - ESME password
      *
@@ -464,8 +464,8 @@ class Client implements SmppClientInterface
     }
 
     /**
-     * Bind transceiver, this object bound as receiver and transmitter at same time,
-     * only if available in SMPP gateway
+     * Bind transceiver, this object is bound as receiver and transmitter at the same time,
+     * only if available in the SMPP gateway
      *
      * @param string $login - ESME system_id
      * @param string $pass - ESME password
@@ -492,7 +492,7 @@ class Client implements SmppClientInterface
 
     /**
      * Parse a time string as formatted by SMPP v3.4 section 7.1.
-     * Returns an object of either DateTime or DateInterval is returned.
+     * Returns an object of either DateTime or DateInterval.
      *
      * @param string $input
      *
@@ -569,8 +569,8 @@ class Client implements SmppClientInterface
     }
 
     /**
-     * Read one SMS from SMSC. Can be executed only after bindReceiver() call.
-     * This method blocks. Method returns on socket timeout or enquire_link signal from SMSC.
+     * Read one SMS from SMSC. Can be executed only after the bindReceiver() call.
+     * This method blocks. The method returns on a socket timeout or an enquire_link signal from the SMSC.
      *
      * @return DeliveryReceipt|Sms|bool
      * @throws Exception
@@ -593,7 +593,7 @@ class Client implements SmppClientInterface
             if ($pdu === false) {
                 return false;
             } // TSocket v. 0.6.0+ returns false on timeout
-            //check for enquire link command
+            //check for the enquire link command
             if ($pdu->getId() === Command::ENQUIRE_LINK) {
                 $response = new Pdu(Command::ENQUIRE_LINK_RESP, Smpp::ESME_ROK, $pdu->getSequence(), "\x00");
                 $this->sendPDU($response);
@@ -624,7 +624,7 @@ class Client implements SmppClientInterface
 
         $this->logger->debug("Received sms:\n" . print_r($sms, true));
 
-        // Send response of receiving sms
+        // Send a response of receiving sms
         $response = new Pdu(Command::DELIVER_SM_RESP, Smpp::ESME_ROK, $pdu->getSequence(), "\x00");
         $this->sendPDU($response);
         return $sms;
@@ -635,8 +635,8 @@ class Client implements SmppClientInterface
      * $message is always in octets regardless of the data encoding.
      * For correct handling of Concatenated SMS,
      * message must be encoded with GSM 03.38 (data_coding 0x00) or UCS-2BE (0x08).
-     * Concatenated SMS'es uses 16-bit reference numbers, which gives 152 GSM 03.38 chars or 66 UCS-2BE chars per CSMS.
-     * If we are using 8-bit ref numbers in the UDH for CSMS it's 153 GSM 03.38 chars
+     * Concatenated SMSes use 16-bit reference numbers, which gives 152 GSM 03.38 chars or 66 UCS-2BE chars per CSMS.
+     * If we are using 8-bit ref numbers in the UDH for CSMS, it's 153 GSM 03.38 chars
      *
      * @param Address $from
      * @param Address $to
@@ -672,14 +672,14 @@ class Client implements SmppClientInterface
             case Smpp::DATA_CODING_UCS2:
                 // in octets, 70 UCS-2 chars
                 $singleSmsOctetLimit = 140;
-                // There are 133 octets available, but this would split the UCS the middle so use 132 instead
+                // There are 133 octets available, but this would split the UCS in the middle, so use 132 instead
                 $csmsSplit = 132;
                 $message   = mb_convert_encoding($message, 'UCS-2');
                 //Update message length with current encoding
                 $messageLength = mb_strlen($message);
                 break;
             case Smpp::DATA_CODING_DEFAULT:
-                // we send data in octets, but GSM 03.38 will be packed in septets (7-bit) by SMSC.
+                //We send data in octets, but GSM 03.38 will be packed in septets (7-bit) by SMSC.
                 $singleSmsOctetLimit = 160;
                 // send 152/153 chars in each SMS (SMSC will format data)
                 $csmsSplit = ($this->config->getCsmsMethod() === Smpp::CSMS_8BIT_UDH) ? 153 : 152;
@@ -773,7 +773,7 @@ class Client implements SmppClientInterface
 
     /**
      * Split a message into multiple parts, taking the encoding into account.
-     * A character represented by an GSM 03.38 escape-sequence shall not be split in the middle.
+     * A character represented by a GSM 03.38 escape sequence shall not be split in the middle.
      * Uses str_split if at all possible, and will examine all split points for escape chars if it's required.
      *
      * @param string $message
@@ -791,7 +791,7 @@ class Client implements SmppClientInterface
         switch ($dataCoding) {
             case Smpp::DATA_CODING_DEFAULT:
                 $messageLength = strlen($message);
-                // Do we need to do php based split?
+                // Do we need to do a PHP-based split?
                 $numParts = floor($messageLength / $chunkSize);
                 if ($messageLength % $chunkSize == 0) {
                     $numParts--;
@@ -836,7 +836,7 @@ class Client implements SmppClientInterface
 
     /**
      * Perform the actual submit_sm call to send SMS.
-     * Implemented as a protected method to allow automatic sms concatenation.
+     * Implemented as a protected method to enable automatic SMS concatenation.
      * Tags must be an array of already packed and encoded TLV-params.
      *
      * @param Address $source
@@ -945,7 +945,7 @@ class Client implements SmppClientInterface
     /**
      * Respond to any enquire link we might have waiting.
      * If will check the queue first and respond to any enquire links we have there.
-     * Then it will move on to the transport, and if the first PDU is enquire link respond,
+     * Then it will move on to the transport, and if the first PDU is an enquire link response,
      * otherwise add it to the queue and return.
      *
      * @throws Exception
