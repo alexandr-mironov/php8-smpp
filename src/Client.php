@@ -31,8 +31,8 @@ use Smpp\Protocol\PDUParser;
 use Smpp\Transport\SocketTransport;
 
 /**
- * Class for receiving or sending sms through SMPP protocol.
- * This is a reduced implementation of the SMPP protocol, and as such not all features will or ought to be available.
+ * Class for receiving or sending sms through the SMPP protocol.
+ * This is a reduced implementation of the SMPP protocol, and as such, not all features will or ought to be available.
  * The purpose is to create a lightweight and simplified SMPP client.
  *
  * @author hd@onlinecity.dk, paladin, Alexandr Mironov
