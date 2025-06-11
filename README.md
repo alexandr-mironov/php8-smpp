@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace app\components\Sms;
 
 use Exception;
-use Smpp\{Address, Client as SmppClient, Smpp, Transport\SocketTransport};
+use Smpp\{Pdu\Address, Client as SmppClient, Smpp, Transport\SocketTransport};
 
 class SmsBuilder
 {
