@@ -235,7 +235,7 @@ class Client implements SmppClientInterface
 
     /**
      * Waits for SMSC response on specific PDU.
-     * If a GENERIC_NACK with a matching sequence number, or null sequence is received instead it's also accepted.
+     * If a GENERIC_NACK with a matching sequence number, or null sequence, is received instead, it's also accepted.
      * Some SMPP servers, ie. logica returns GENERIC_NACK on errors.
      *
      * @param int $sequenceNumber - PDU sequence number
