@@ -182,7 +182,7 @@ class Client implements SmppClientInterface
     }
 
     /**
-     * Sends the PDU command to the SMSC and waits for response.
+     * Sends the PDU command to the SMSC and waits for a response.
      * @param int $id - command ID
      * @param ?string $pduBody - PDU body
      * @return Pdu
