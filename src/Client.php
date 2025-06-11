@@ -117,11 +117,11 @@ class Client implements SmppClientInterface
     }
 
     /**
-     * Query the SMSC about current state/status of a previous sent SMS.
-     * You must specify the SMSC assigned message id and source of the sent SMS.
+     * Query the SMSC about the current state/status of a previously sent SMS.
+     * You must specify the SMSC-assigned message ID and source of the sent SMS.
      * Returns an associative array with elements: message_id, final_date, message_state and error_code.
      *    message_state would be one of the SMPP::STATE_* constants. (SMPP v3.4 section 5.2.28)
-     *    error_code depends on the telco network, so could be anything.
+     *    error_code depends on the telco network, so it could be anything.
      *
      * @param string $messageID
      * @param Address $source
