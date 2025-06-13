@@ -297,7 +297,7 @@ class Client implements SmppClientInterface
     {
         // Read PDU header
         $bufHeaders = $this->transport->read(PDUHeader::PDU_HEADER_LENGTH);
-        if ($bufHeaders === false) {
+        if ($bufHeaders === "") {
             return false;
         }
 

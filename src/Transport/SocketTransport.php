@@ -282,7 +282,6 @@ class SocketTransport implements TransportInterface
      *
      * @return array{sec: false|float, usec: int}
      */
-    #[ArrayShape(['sec' => "false|float", 'usec' => "int"])]
     private function millisecToSolArray(int $millisec): array
     {
         $usec = $millisec * 1000;
