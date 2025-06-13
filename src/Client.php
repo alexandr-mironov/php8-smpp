@@ -309,7 +309,7 @@ class Client implements SmppClientInterface
         $body = null;
         if ($bodyLength > 0) {
             // if body is not empty, read them from the socket
-            $body = $this->transport->readAll($bodyLength);
+            $body = $this->transport->read($bodyLength);
             if (strlen($body) === 0) {
                 throw new SmppException('Could not read PDU body');
             }

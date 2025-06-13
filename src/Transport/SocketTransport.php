@@ -6,9 +6,11 @@ namespace Smpp\Transport;
 
 use ArrayIterator;
 use InvalidArgumentException;
+use JetBrains\PhpStorm\ArrayShape;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Smpp\Configs\SocketTransportConfig;
+use Smpp\Contracts\Transport\TransportInterface;
 use Smpp\Exceptions\SmppException;
 use Smpp\Exceptions\SocketTransportException;
 use Socket;
@@ -23,7 +25,7 @@ use Socket;
  * Licensed under the MIT license, which can be read at: http://www.opensource.org/licenses/mit-license.php
  * @author hd@onlinecity.dk
  */
-class SocketTransport
+class SocketTransport implements TransportInterface
 {
     /**
      * @var Socket instance of Socket (since PHP 8)
@@ -112,7 +114,7 @@ class SocketTransport
             } else { // Do a DNS lookup
                 if (!$this->config->isForceIpv4()) {
                     // if not in IPv4 only mode, check the AAAA records first
-                    $records = dns_get_record($hostname, DNS_AAAA);
+                    $records = @dns_get_record($hostname, DNS_AAAA);
                     if ($records === false) {
                         $this->logger->error('DNS lookup for AAAA records for: ' . $hostname . ' failed');
                     }
@@ -127,7 +129,7 @@ class SocketTransport
                 }
                 if (!$this->config->isForceIpv6()) {
                     // if not in IPv6 mode check the A records also
-                    $records = dns_get_record($hostname, DNS_A);
+                    $records = @dns_get_record($hostname, DNS_A);
                     if ($records === false) {
                         $this->logger->error('DNS lookup for A records for: ' . $hostname . ' failed');
                     }
@@ -250,7 +252,7 @@ class SocketTransport
      */
     public function isOpen(): bool
     {
-        if (!$this->socket instanceof Socket) {
+        if (!isset($this->socket)) {
             return false;
         }
 
@@ -280,6 +282,7 @@ class SocketTransport
      *
      * @return array{sec: false|float, usec: int}
      */
+    #[ArrayShape(['sec' => "false|float", 'usec' => "int"])]
     private function millisecToSolArray(int $millisec): array
     {
         $usec = $millisec * 1000;
@@ -421,7 +424,7 @@ class SocketTransport
      * @param int $length
      * @return false|string
      */
-    public function read(int $length): false|string
+    public function legacyRead(int $length): false|string
     {
         $datagram = socket_read($this->socket, $length, PHP_BINARY_READ);
         // sockets give EAGAIN on timeout
@@ -446,7 +449,7 @@ class SocketTransport
      * @return string
      * @throws SocketTransportException
      */
-    public function readAll(int $length): string
+    public function read(int $length): string
     {
         $datagram = "";
         $r        = 0;
