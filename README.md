@@ -9,6 +9,22 @@ SMPP Client (v 3.4) on PHP8
 # ATTENTION!
 ## In development! Not production ready!
 
+## Project Status: Stable API
+### Refactoring is nearly complete – no further breaking changes are anticipated.
+
+### Current focus:
+- ✅ Writing comprehensive tests
+- ✅ Adding usage examples & documentation
+- ✅ Expanding functionality (backward-compatible)
+
+We welcome:
+
+Bug reports
+
+Documentation improvements
+
+Feature suggestions (via Issues)
+
 # Install
 ```shell
 composer require php8-smpp/php8-smpp
@@ -16,7 +32,8 @@ composer require php8-smpp/php8-smpp
 
 # Documentation
 
-
+Usage examples
+ - 01. Simple client building [en](/docs/examples/basic-usage/en/01-default-client.md) 
 
 
 ### about protocol
