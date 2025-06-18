@@ -1,0 +1,44 @@
+name: PHPUnit Tests
+
+on:
+    push:
+        branches: [ main, develop ]
+    pull_request:
+        branches: [ main, develop ]
+
+jobs:
+    test:
+        name: PHPUnit (PHP ${{ matrix.php }})
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                php: ['8.0', '8.1', '8.2', '8.3']
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php }}
+                  extensions: mbstring, sockets
+                  coverage: pcov
+                  tools: composer:v2
+
+            - name: Cache Composer dependencies
+              uses: actions/cache@v3
+              with:
+                  path: vendor
+                  key: ${{ runner.os }}-php-${{ matrix.php }}-composer-${{ hashFiles('composer.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-php-${{ matrix.php }}-composer-
+
+            - name: Install dependencies
+              run: |
+                  composer install --prefer-dist --no-progress --no-suggest
+
+            - name: Run PHPUnit
+              run: vendor/bin/phpunit --verbose --coverage-text --coverage-clover=coverage.xml
+              env:
+                  APP_ENV: test

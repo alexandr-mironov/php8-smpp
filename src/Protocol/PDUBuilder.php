@@ -8,12 +8,11 @@ use Psr\Log\LoggerInterface;
 use Smpp\Pdu\BinaryPDU;
 use Smpp\Pdu\Pdu;
 use Smpp\Pdu\PDUHeader;
-use Smpp\Smpp;
 
 class PDUBuilder
 {
     public function __construct(
-        private LoggerInterface $logger
+        private LoggerInterface &$logger
     )
     {
 

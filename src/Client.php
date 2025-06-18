@@ -14,6 +14,7 @@ use Smpp\Contracts\Client\SmppClientInterface;
 use Smpp\Contracts\Middlewares\MiddlewareInterface;
 use Smpp\Contracts\Pdu\PduInterface;
 use Smpp\Contracts\Pdu\PduResponseInterface;
+use Smpp\Contracts\Transport\TransportInterface;
 use Smpp\Exceptions\ClosedTransportException;
 use Smpp\Exceptions\SmppException;
 use Smpp\Exceptions\SmppInvalidArgumentException;
@@ -29,7 +30,6 @@ use Smpp\Protocol\Command;
 use Smpp\Protocol\CommandStatus;
 use Smpp\Protocol\PDUBuilder;
 use Smpp\Protocol\PDUParser;
-use Smpp\Transport\SocketTransport;
 
 /**
  * Class for receiving or sending sms through the SMPP protocol.
@@ -65,29 +65,24 @@ class Client implements SmppClientInterface
 
     /** @var string */
     private const MODE_RECEIVER = 'receiver';
-
-    /** @var Pdu[] */
-    protected array $pduQueue = [];
+    /**
+     * @var LoggerInterface
+     */
+    public LoggerInterface $logger;
 
     // Used for reconnect
+    /**
+     * @var SmppConfig
+     */
+    public SmppConfig $config;
+    /** @var Pdu[] */
+    protected array $pduQueue = [];
     /** @var string */
     protected string $mode;
     /** @var int */
     protected int $sequenceNumber = 1;
     /** @var int */
     protected int $sarMessageReferenceNumber;
-    /** @var string $login Login of SMPP gateway */
-    private string $login = '';
-    /** @var string $pass Password of SMPP gateway */
-    private string $pass = '';
-    /**
-     * @var LoggerInterface
-     */
-    private LoggerInterface $logger;
-    /**
-     * @var SmppConfig
-     */
-    private SmppConfig $config;
     /**
      * @var PDUParser
      */
@@ -100,21 +95,21 @@ class Client implements SmppClientInterface
     /**
      * Construct the SMPP Client class
      *
-     * @param SocketTransport $transport
-     * @param SmppConfig|null $config
-     * @param LoggerInterface|null $logger
+     * @param TransportInterface $transport
+     * @param string $systemId
+     * @param string $password
      */
     public function __construct(
-        public SocketTransport $transport,
-        ?SmppConfig $config = null,
-        ?LoggerInterface $logger = null
+        public TransportInterface $transport,
+        private string $systemId,
+        private string $password
     )
     {
-        $this->config = ($config === null) ? new SmppConfig() : $config;
-        $this->logger = ($logger === null) ? new NullLogger() : $logger;
+        $this->config = new SmppConfig();
+        $this->logger = new NullLogger();
 
         $this->builder = new PDUBuilder($this->logger);
-        $this->parser = new PDUParser($this->logger);
+        $this->parser  = new PDUParser($this->logger);
     }
 
     /**
@@ -229,11 +224,6 @@ class Client implements SmppClientInterface
         $this->transport->write($binaryPdu->getData(), $binaryPdu->getLength());
     }
 
-    protected function sendBinaryPdu(BinaryPDU $pdu): void
-    {
-        $this->transport->write($pdu->getData(), $pdu->getLength());
-    }
-
     /**
      * Waits for SMSC response on specific PDU.
      * If a GENERIC_NACK with a matching sequence number, or null sequence, is received instead, it's also accepted.
@@ -342,14 +332,14 @@ class Client implements SmppClientInterface
     protected function reconnect(): void
     {
         $this->close();
-        sleep(1);
+        usleep($this->config->getReconnectSleepTime());
         $this->transport->open();
         $this->sequenceNumber = 1;
 
         match ($this->mode) {
-            self::MODE_TRANSMITTER => $this->bindTransmitter($this->login, $this->pass),
-            self::MODE_RECEIVER => $this->bindReceiver($this->login, $this->pass),
-            self::MODE_TRANSCEIVER => $this->bindTransceiver($this->login, $this->pass),
+            self::MODE_TRANSMITTER => $this->bindTransmitter(),
+            self::MODE_RECEIVER => $this->bindReceiver(),
+            self::MODE_TRANSCEIVER => $this->bindTransceiver(),
             default => throw new SmppException('Invalid mode: ' . $this->mode)
         };
     }
@@ -378,50 +368,43 @@ class Client implements SmppClientInterface
     /**
      * Binds the transmitter. One object can be bound only as a receiver or only as a transmitter.
      *
-     * @param string $login - ESME system_id
-     * @param string $pass - ESME password
-     *
      * @return void
      * @throws Exception
      */
-    public function bindTransmitter(string $login, string $pass): void
+    public function bindTransmitter(): void
     {
         if (!$this->transport->isOpen()) {
-            throw new ClosedTransportException();
+            $this->transport->open();
         }
 
         $this->logger->debug('Binding transmitter...');
 
-        $response = $this->bind($login, $pass, Command::BIND_TRANSMITTER);
+        $response = $this->bind(Command::BIND_TRANSMITTER);
 
         $this->logger->debug("Binding status  : " . $response->getStatus());
 
-        $this->mode  = self::MODE_TRANSMITTER;
-        $this->login = $login;
-        $this->pass  = $pass;
+        $this->mode = self::MODE_TRANSMITTER;
     }
 
     /**
      * Binds the socket and opens the session on SMSC
      *
-     * @param string $login - ESME system_id
-     * @param string $pass
-     * @param int $commandID (todo replace to ENUM in php 8.1)
+     * @param int $commandID
      *
      * @return Pdu
      *
      * @throws Exception
      */
-    protected function bind(string $login, string $pass, int $commandID): Pdu
+    protected function bind(int $commandID): Pdu
     {
         // Make PDU body
         $pduBody = pack(
-            'a' . (strlen($login) + 1)
-            . 'a' . (strlen($pass) + 1)
+            'a' . (strlen($this->systemId) + 1)
+            . 'a' . (strlen($this->password) + 1)
             . 'a' . (strlen($this->config->getSystemType()) + 1)
             . 'CCCa' . (strlen($this->config->getAddressRange()) + 1),
-            $login,
-            $pass,
+            $this->systemId,
+            $this->password,
             $this->config->getSystemType(),
             $this->config->getInterfaceVersion(),
             $this->config->getAddressNumberType(),
@@ -439,56 +422,47 @@ class Client implements SmppClientInterface
 
     /**
      * Binds the receiver. One object can be bound only as a receiver or only as a transmitter.
-     * @param string $login - ESME system_id
-     * @param string $pass - ESME password
      *
      * @return void
      *
      * @throws ClosedTransportException
      * @throws Exception
      */
-    public function bindReceiver(string $login, string $pass): void
+    public function bindReceiver(): void
     {
         if (!$this->transport->isOpen()) {
-            throw new ClosedTransportException();
+            $this->transport->open();
         }
 
         $this->logger->debug('Binding receiver...');
 
-        $response = $this->bind($login, $pass, Command::BIND_RECEIVER);
+        $response = $this->bind(Command::BIND_RECEIVER);
 
         $this->logger->debug("Binding status  : " . $response->getStatus());
 
-        $this->mode  = self::MODE_RECEIVER;
-        $this->login = $login;
-        $this->pass  = $pass;
+        $this->mode = self::MODE_RECEIVER;
     }
 
     /**
      * Bind transceiver, this object is bound as receiver and transmitter at the same time,
      * only if available in the SMPP gateway
      *
-     * @param string $login - ESME system_id
-     * @param string $pass - ESME password
-     *
      * @return void
      * @throws Exception
      */
-    public function bindTransceiver(string $login, string $pass): void
+    public function bindTransceiver(): void
     {
         if (!$this->transport->isOpen()) {
-            throw new ClosedTransportException();
+            $this->transport->open();
         }
 
         $this->logger->debug('Binding transceiver...');
 
-        $response = $this->bind($login, $pass, Command::BIND_TRANSCEIVER);
+        $response = $this->bind(Command::BIND_TRANSCEIVER);
 
         $this->logger->debug("Binding status  : " . $response->getStatus());
 
-        $this->mode  = self::MODE_TRANSCEIVER;
-        $this->login = $login;
-        $this->pass  = $pass;
+        $this->mode = self::MODE_TRANSCEIVER;
     }
 
     /**
@@ -982,6 +956,11 @@ class Client implements SmppClientInterface
     private function sendEnquireLinkResponse(int $sequence): void
     {
         $this->sendBinaryPdu($this->builder->getEnquireLinkResponse($sequence));
+    }
+
+    protected function sendBinaryPdu(BinaryPDU $pdu): void
+    {
+        $this->transport->write($pdu->getData(), $pdu->getLength());
     }
 
     /**

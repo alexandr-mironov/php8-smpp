@@ -97,6 +97,11 @@ class SmppConfig
      */
     private bool $smsNullTerminateOctetstrings = false;
 
+    /**
+     * @var int sleep time before try to reconnect in microseconds
+     */
+    private int $reconnectSleepTime = 1_000_000;
+
     public function __construct()
     {
     }
@@ -296,8 +301,6 @@ class SmppConfig
         return $this->smsProtocolID;
     }
 
-    // ESME transmitter parameters
-
     /**
      * @param int $smsProtocolID
      * @return SmppConfig
@@ -307,6 +310,8 @@ class SmppConfig
         $this->smsProtocolID = $smsProtocolID;
         return $this;
     }
+
+    // ESME transmitter parameters
 
     /**
      * @return int
@@ -377,6 +382,21 @@ class SmppConfig
     public function setSmsSmDefaultMessageID(int $smsSmDefaultMessageID): SmppConfig
     {
         $this->smsSmDefaultMessageID = $smsSmDefaultMessageID;
+        return $this;
+    }
+
+    public function getReconnectSleepTime(): int
+    {
+        return $this->reconnectSleepTime;
+    }
+
+    /**
+     * @param int $reconnectSleepTime
+     * @return SmppConfig
+     */
+    public function setReconnectSleepTime(int $reconnectSleepTime): SmppConfig
+    {
+        $this->reconnectSleepTime = $reconnectSleepTime;
         return $this;
     }
 }

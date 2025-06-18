@@ -22,7 +22,7 @@ class PDUParser
     private const UINT32_BINARY_LENGTH = 4;
 
     public function __construct(
-        private LoggerInterface $logger
+        private LoggerInterface &$logger
     )
     {
 
@@ -145,7 +145,7 @@ class PDUParser
             } while (current($unpackedElements) !== false);
         }
 
-        if (($esmClass & Smpp::ESM_DELIVER_SMSC_RECEIPT) != 0) {
+        if (($esmClass & Smpp::ESM_DELIVER_SMSC_RECEIPT) !== 0) {
             $sms = new DeliveryReceipt(
                 $pdu->getId(),
                 $pdu->getStatus(),
