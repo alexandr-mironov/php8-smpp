@@ -76,7 +76,7 @@ class Resolver
      * @return Entry
      * @throws SmppInvalidArgumentException
      */
-    private static function createFallbackEntry(string $ip, int $port): Entry
+    public static function createFallbackEntry(string $ip, int $port): Entry
     {
         return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)
             ? new Entry(port: $port, ipv6: $ip)
@@ -91,7 +91,7 @@ class Resolver
      *
      * @return array<string> List of IP addresses
      */
-    private static function resolveIPs(string $host, int $type): array
+    public static function resolveIPs(string $host, int $type): array
     {
         $records = (self::$dnsResolver)($host, $type);
         return array_column($records, $type === DNS_A ? 'ip' : 'ipv6');

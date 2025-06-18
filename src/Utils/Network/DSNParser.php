@@ -55,15 +55,13 @@ class DSNParser
 
         // Handle domain names
         if (filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false) {
-            /** @var Generator<int, Entry> $generator */
-            $generator = Resolver::getIPsByHost($host, $port);
-            yield from $generator;
+            yield from Resolver::getIPsByHost($host, $port);
             return;
         }
 
         // If we reach here, the host format is unrecognized
         throw new SmppInvalidArgumentException(
-            'Invalid host format. Expected IPv4, IPv6 or valid domain name'
+            'Invalid host format. Expected IPv4, IPv6 or valid domain name.'
         );
     }
 

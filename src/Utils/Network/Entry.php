@@ -28,7 +28,7 @@ class Entry
             throw new SmppInvalidArgumentException('Invalid port number provided');
         }
 
-        if (!isset($this->ipv4, $this->ipv6)) {
+        if (is_null($this->ipv4) && is_null($this->ipv6)) {
             throw new SmppInvalidArgumentException('Addresses not provided');
         }
     }
