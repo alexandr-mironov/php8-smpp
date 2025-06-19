@@ -2,9 +2,15 @@
 SMPP Client (v 3.4) on PHP8
 
 [![phpstan](https://badgen.net/github/checks/php8-smpp/php8-smpp/main/PHPStan)]()
+[![phpunit 8.0](https://badgen.net/github/checks/php8-smpp/php8-smpp/main/PHPUnit%20%28PHP%208.0%29)]()
+[![phpunit 8.1](https://badgen.net/github/checks/php8-smpp/php8-smpp/main/PHPUnit%20%28PHP%208.1%29)]()
+[![phpunit 8.2](https://badgen.net/github/checks/php8-smpp/php8-smpp/main/PHPUnit%20%28PHP%208.2%29)]()
+[![phpunit 8.3](https://badgen.net/github/checks/php8-smpp/php8-smpp/main/PHPUnit%20%28PHP%208.3%29)]()
 [![stars](https://badgen.net/github/stars/php8-smpp/php8-smpp/)]()
 [![forks](https://badgen.net/github/forks/php8-smpp/php8-smpp/)]()
 [![open-issues](https://badgen.net/github/open-issues/php8-smpp/php8-smpp/)]()
+
+[версия на русском](/docs/README_ru.md)
 
 # ATTENTION!
 ## In development! Not production ready!

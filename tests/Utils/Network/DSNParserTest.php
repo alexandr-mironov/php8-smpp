@@ -2,10 +2,9 @@
 
 namespace Utils\Network;
 
-use Generator;
+use PHPUnit\Framework\TestCase;
 use Smpp\Exceptions\SmppInvalidArgumentException;
 use Smpp\Utils\Network\DSNParser;
-use PHPUnit\Framework\TestCase;
 use Smpp\Utils\Network\Entry;
 
 class DSNParserTest extends TestCase
@@ -37,5 +36,10 @@ class DSNParserTest extends TestCase
             ['127.0.0.1:2775', '127.0.0.1', null, 2775],
             ['[::1]:2776', null, '::1', 2776],
         ];
+    }
+
+    public function testParseIPv6DSN(): void
+    {
+
     }
 }
