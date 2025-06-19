@@ -39,7 +39,8 @@ composer require php8-smpp/php8-smpp
 # Documentation
 
 Usage examples
- - 01. Simple client building [en](/docs/examples/basic-usage/en/01-default-client.md) 
+01. Simple client building [en](/docs/examples/basic-usage/en/01-default-client.md)
+02. Read strategies [en](/docs/examples/basic-usage/en/02-read-strategies-in-socket-transport.md)
 
 
 ### about protocol
