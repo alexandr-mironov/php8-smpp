@@ -27,10 +27,6 @@ class SocketTransport implements TransportInterface
 {
     protected const PROTOCOL_TYPE = SOL_TCP;
     /**
-     * @var int define MSG_DONTWAIT as class const to prevent bug https://bugs.php.net/bug.php?id=48326
-     */
-    private const MSG_DONTWAIT = 64;
-    /**
      * @var LoggerInterface
      */
     public LoggerInterface $logger;
@@ -313,33 +309,6 @@ class SocketTransport implements TransportInterface
     }
 
     /**
-     * Read up to $length bytes from the socket.
-     * Does not guarantee that all the bytes are read.
-     * Returns false on EOF
-     * Returns false on timeout (technically EAGAIN error).
-     * Throws SocketTransportException if data could not be read.
-     *
-     * @param int $length
-     * @return false|string
-     */
-    public function legacyRead(int $length): false|string
-    {
-        $datagram = socket_read($this->socket, $length, PHP_BINARY_READ);
-        // sockets give EAGAIN on timeout
-        if ($datagram === false && socket_last_error() === SOCKET_EAGAIN) {
-            return false;
-        }
-        if ($datagram === false) {
-            throw new SocketTransportException(
-                'Could not read ' . $length . ' bytes from socket; ' . socket_strerror(socket_last_error()),
-                socket_last_error()
-            );
-        }
-
-        return $datagram ?: false;
-    }
-
-    /**
      * Read all the bytes, and block until they are read.
      * Timeout throws SocketTransportException
      *
@@ -349,58 +318,8 @@ class SocketTransport implements TransportInterface
      */
     public function read(int $length): string
     {
-        $datagram = "";
-        $r        = 0;
-        /**
-         * @var false|array{sec: int, usec: int} $readTimeout
-         */
-        $readTimeout = socket_get_option($this->socket, SOL_SOCKET, SO_RCVTIMEO);
-        if ($readTimeout === false) {
-            throw new SocketTransportException("Read timeout is not set");
-        }
-
-        while ($r < $length) {
-            $buf           = '';
-            $receivedBytes = socket_recv($this->socket, $buf, $length - $r, self::MSG_DONTWAIT);
-            if ($receivedBytes === false) {
-                throw new SocketTransportException(
-                    'Could not read ' . $length . ' bytes from socket; ' . socket_strerror(socket_last_error()),
-                    socket_last_error()
-                );
-            }
-            $r        += $receivedBytes;
-            $datagram .= $buf;
-            if ($r === $length) {
-                return $datagram;
-            }
-
-            // wait for data to be available, up to timeout
-            $read   = [$this->socket];
-            $write  = null;
-            $except = [$this->socket];
-
-            // check
-            if (socket_select($read, $write, $except, $readTimeout['sec'], $readTimeout['usec']) === false) {
-                throw new SocketTransportException(
-                    'Could not examine socket; ' . socket_strerror(socket_last_error()),
-                    socket_last_error()
-                );
-            }
-            /** @var Socket[] $except */
-            if (!empty($except)) {
-                throw new SocketTransportException(
-                    'Socket exception while waiting for data; ' . socket_strerror(socket_last_error()),
-                    socket_last_error()
-                );
-            }
-            /** @var Socket[] $read */
-            if (empty($read)) {
-                throw new SocketTransportException('Timed out waiting for data on socket');
-            }
-        }
-
-        // for static analyzers
-        return $datagram;
+        $strategy = $this->config->getReadStrategy();
+        return $strategy->read($this->socket, $length);
     }
 
     /**

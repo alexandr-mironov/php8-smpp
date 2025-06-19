@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Smpp\Configs;
 
 
+use Smpp\Contracts\Transport\ReadStrategyInterface;
+use Smpp\Transport\BlockingReadStrategy;
+use Smpp\Transport\HybridReadStrategy;
+use Smpp\Transport\NonBlockingReadStrategy;
+
 class SocketTransportConfig
 {
     /** @var int */
@@ -17,6 +22,8 @@ class SocketTransportConfig
     private bool $forceIpv4 = false;
     /** @var bool */
     private bool $randomHost = false;
+    /** @var ReadStrategyInterface */
+    private ReadStrategyInterface $readStrategy;
 
     /**
      * @return int
@@ -105,6 +112,21 @@ class SocketTransportConfig
     public function setRandomHost(bool $randomHost): SocketTransportConfig
     {
         $this->randomHost = $randomHost;
+        return $this;
+    }
+
+    public function getReadStrategy(): ReadStrategyInterface
+    {
+        return $this->readStrategy ?? new HybridReadStrategy(
+                new NonBlockingReadStrategy(),
+                new BlockingReadStrategy(500)
+            );
+    }
+
+    public function setReadStrategy(ReadStrategyInterface $strategy): self
+    {
+        $this->readStrategy = $strategy;
+
         return $this;
     }
 }
