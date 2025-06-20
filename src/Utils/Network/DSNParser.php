@@ -14,6 +14,41 @@ use Smpp\Exceptions\SmppInvalidArgumentException;
 class DSNParser
 {
     /**
+     * @param string ...$dsnEntries
+     * @return Entry[]
+     *
+     * @throws SmppInvalidArgumentException
+     */
+    public static function parseDSNEntries(string ...$dsnEntries): array
+    {
+        $parsedEntries = [];
+
+        foreach (self::getEntryGenerator($dsnEntries) as $entry) {
+            $parsedEntries[] = $entry;
+        }
+
+        return $parsedEntries;
+    }
+
+    /**
+     * @param string[] $dsns
+     *
+     * @return Generator<int, Entry, mixed, void>
+     *   - int: Generator keys (auto-increment)
+     *   - Entry: Generated values of type Entry
+     *   - mixed: Send type (unused in this generator)
+     *   - void: Return type (nothing returned after generation)
+     *
+     * @throws SmppInvalidArgumentException
+     */
+    private static function getEntryGenerator(array $dsns): Generator
+    {
+        foreach ($dsns as $dsn) {
+            yield from DSNParser::parse($dsn);
+        }
+    }
+
+    /**
      * Parses a DSN string and returns a generator of connection entries.
      *
      * @param string $dsn Connection string in "host:port" or "[ipv6]:port" format

@@ -12,10 +12,7 @@ SMPP Client (v 3.4) on PHP8
 
 [версия на русском](/docs/README_ru.md)
 
-# ATTENTION!
-## In development! Not production ready!
-
-## Project Status: Stable API
+## Project Status: Stable API (v0.1)
 ### Refactoring is nearly complete – no further breaking changes are anticipated.
 
 ### Current focus:
@@ -39,9 +36,10 @@ composer require php8-smpp/php8-smpp
 # Documentation
 
 Usage examples
-00. about dsn [en](/docs/)
+00. About DSN [en](/docs/en/00-about-dsn.md)
 01. Simple client building [en](/docs/examples/basic-usage/en/01-default-client.md)
 02. Read strategies [en](/docs/examples/basic-usage/en/02-read-strategies-in-socket-transport.md)
+03. Alternative Client Factory [en](/docs/examples/basic-usage/en/03-alternative-client-factory.md)
 
 
 ### about protocol

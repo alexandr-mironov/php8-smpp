@@ -5,17 +5,14 @@ declare(strict_types=1);
 
 namespace Smpp;
 
-use Generator;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Smpp\Configs\SmppConfig;
 use Smpp\Configs\SocketTransportConfig;
 use Smpp\Contracts\Transport\TransportInterface;
-use Smpp\Exceptions\SmppException;
 use Smpp\Transport\SCTPTransport;
 use Smpp\Transport\SocketTransport;
 use Smpp\Utils\Network\DSNParser;
-use Smpp\Utils\Network\Entry;
 
 class ClientBuilder
 {
@@ -61,44 +58,9 @@ class ClientBuilder
             $config = new SocketTransportConfig();
         }
 
-        $self->transport = new SocketTransport($self->parseDSNEntries(...$dsnEntries), $config);
+        $self->transport = new SocketTransport(DSNParser::parseDSNEntries(...$dsnEntries), $config);
 
         return $self;
-    }
-
-    /**
-     * @param string ...$dsnEntries
-     * @return Entry[]
-     *
-     * @throws Exceptions\SmppInvalidArgumentException
-     */
-    private function parseDSNEntries(string ...$dsnEntries): array
-    {
-        $parsedEntries = [];
-
-        foreach (self::getEntryGenerator($dsnEntries) as $entry) {
-            $parsedEntries[] = $entry;
-        }
-
-        return $parsedEntries;
-    }
-
-    /**
-     * @param string[] $dsns
-     *
-     * @return Generator<int, Entry, mixed, void>
-     *   - int: Generator keys (auto-increment)
-     *   - Entry: Generated values of type Entry
-     *   - mixed: Send type (unused in this generator)
-     *   - void: Return type (nothing returned after generation)
-     *
-     * @throws Exceptions\SmppInvalidArgumentException
-     */
-    private function getEntryGenerator(array $dsns): Generator
-    {
-        foreach ($dsns as $dsn) {
-            yield from DSNParser::parse($dsn);
-        }
     }
 
     /**
@@ -116,7 +78,7 @@ class ClientBuilder
             $config = new SocketTransportConfig();
         }
 
-        $self->transport = new SCTPTransport($self->parseDSNEntries(...$dsnEntries), $config);
+        $self->transport = new SCTPTransport(DSNParser::parseDSNEntries(...$dsnEntries), $config);
 
         return $self;
     }
@@ -160,7 +122,6 @@ class ClientBuilder
 
     /**
      * @return Client
-     * @throws SmppException
      */
     public function buildClient(): Client
     {
