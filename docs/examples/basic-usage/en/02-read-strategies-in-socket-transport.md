@@ -40,14 +40,13 @@ $client = ClientBuilder::createForSockets(
 
 ### Key Features
 
-1. **Non-Blocking First Attempt**:
+1. **Non-Blocking**:
     - Immediate response if data is available
     - No thread/process blocking
 
 2. **Automatic Retry Logic**:
     - Configurable number of retries (5 in example)
     - Adjustable delay between attempts (200ms in example)
-    - Exponential backoff can be implemented by increasing delay
 
 3. **Seamless Integration**:
     - Works with existing `TransportInterface`
