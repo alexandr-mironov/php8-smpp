@@ -649,9 +649,23 @@ class Client implements SmppClientInterface
                 $singleSmsOctetLimit = 140;
                 // There are 133 octets available, but this would split the UCS in the middle, so use 132 instead
                 $csmsSplit = 132;
-                $message   = mb_convert_encoding($message, 'UCS-2');
+                /**
+                 * Convert message to UTF-16 encoding for proper SMPP UCS-2 compatibility
+                 *
+                 * Uses UTF-16 instead of basic UCS-2 to support:
+                 * - Modern Unicode characters (emojis, symbols beyond BMP)
+                 * - Surrogate pairs (required for characters above U+FFFF)
+                 * - Full compliance with SMPP spec which actually expects UTF-16BE
+                 *   despite referring to it as "UCS-2" (common industry practice)
+                 *
+                 * Note: UTF-16BE is explicitly used rather than system-dependent UTF-16
+                 * to ensure consistent big-endian byte ordering as required by SMPP.
+                 *
+                 * @see SMPP v3.4+ specification section 5.2.19 (data_coding interpretation)
+                 */
+                $message = mb_convert_encoding($message, 'UTF-16BE', 'UTF-8');
                 //Update message length with current encoding
-                $messageLength = mb_strlen($message);
+                $messageLength = strlen($message);
                 break;
             case Smpp::DATA_CODING_DEFAULT:
                 //We send data in octets, but GSM 03.38 will be packed in septets (7-bit) by SMSC.
